@@ -1,0 +1,6 @@
+{
+  "recommendedMode": "bm25",
+  "recommendedCodec": "int8",
+  "benchmarkDate": null,
+  "scope": "Pending full benchmark; conservative BM25 default."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "heading-search",
+  "name": "Heading Search",
+  "version": "0.1.0",
+  "minAppVersion": "1.8.0",
+  "description": "Search notes by heading and meaning with local BM25 and optional CPU embeddings shared across vaults.",
+  "author": "Ian Forester Chou",
+  "authorUrl": "https://github.com/toolanzyhhh1234",
+  "isDesktopOnly": true
+}

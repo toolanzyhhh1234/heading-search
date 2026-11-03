@@ -1,0 +1,11 @@
+node_modules/
+main.js
+*.js.map
+dist/
+.cache/
+coverage/
+.test-vault/
+benchmarks/data/
+benchmarks/cache/
+benchmarks/results/*.json
+!benchmarks/results/summary.json

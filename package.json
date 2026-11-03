@@ -1,0 +1,29 @@
+{
+  "name": "heading-search",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Heading-aware local search for Obsidian, with measured BM25 and CPU vector retrieval.",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/build.mjs --watch",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "node scripts/test.mjs",
+    "benchmark": "node scripts/benchmark.mjs",
+    "package": "npm run build && node scripts/package.mjs",
+    "test:runtime": "node scripts/runtime-smoke.mjs"
+  },
+  "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
+    "mdast-util-from-markdown": "2.0.2",
+    "onnxruntime-web": "1.17.3",
+    "porter-stemmer": "0.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "fflate": "^0.8.2",
+    "obsidian": "1.14.4",
+    "typescript": "^5.8.0"
+  }
+}
