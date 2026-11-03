@@ -1,5 +1,6 @@
 import { Plugin, Notice, requestUrl, TFile } from "obsidian";
-import { readSettings, type Settings } from "./settings";
+import { readSettings, type Settings, type SearchMode } from "./settings";
+import policy from "./retrieval-policy.json";
 import { EmbeddingClient } from "./embedding/client";
 import { ModelStore } from "./embedding/model-store";
 import { SearchService } from "./index/service";
@@ -13,6 +14,7 @@ export default class HeadingSearchPlugin extends Plugin {
   private refreshTimer?:ReturnType<typeof setTimeout>;
   private active=true;
   settingUp=false;
+  sharedModelAvailable=false;
   setupMessage="";
 
   async onload():Promise<void> {
@@ -27,7 +29,7 @@ export default class HeadingSearchPlugin extends Plugin {
     const embedding=new EmbeddingClient(this.modelStore);
     const directory=`${this.app.vault.configDir}/plugins/${this.manifest.id}/index`;
     this.service=new SearchService(this.app,()=>this.settings,embedding,directory,()=>status.setText(`Search: ${this.service.status}`));
-    await this.service.load();
+    await Promise.all([this.service.load(),this.modelStore.isInstalled().then(installed=>{this.sharedModelAvailable=installed;})]);
     this.addRibbonIcon("search","Search notes by heading and meaning",()=>this.openSearch());
     this.addCommand({id:"search-notes",name:"Search notes",callback:()=>this.openSearch()});
     this.addCommand({id:"rebuild-index",name:"Rebuild search index",callback:()=>this.refresh(true)});
@@ -63,11 +65,14 @@ export default class HeadingSearchPlugin extends Plugin {
   async setupSemantic(progress:(message:string)=>void):Promise<void> {
     if(this.settingUp)return;
     this.settingUp=true;
+    const wasEnabled=this.settings.semanticEnabled;
     const update=(message:string)=>{this.setupMessage=message;progress(message);};
     try {
       await this.modelStore.ensure(update);
+      this.sharedModelAvailable=true;
       if(!this.active)return;
       this.settings.semanticEnabled=true;
+      if(!wasEnabled && ["vector","hybrid"].includes(policy.recommendedMode))this.settings.mode=policy.recommendedMode as SearchMode;
       await this.saveSettings();this.refresh();
     } catch(error) {
       update(error instanceof Error ? error.message : "Model setup failed. Please retry.");throw error;

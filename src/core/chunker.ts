@@ -1,5 +1,5 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
-import type { Heading, PhrasingContent } from "mdast";
+import type { Heading, PhrasingContent, Nodes } from "mdast";
 
 export interface HeadingPart { text: string; level: number }
 export interface Chunk {
@@ -13,7 +13,7 @@ export interface Chunk {
 }
 
 function plain(nodes: PhrasingContent[]): string {
-  return nodes.map(node => "value" in node ? node.value : "children" in node ? plain(node.children) : "").join("");
+  return nodes.map(node => node.type === "html" ? "" : "value" in node ? node.value : "children" in node ? plain(node.children) : "alt" in node ? node.alt ?? "" : "").join("");
 }
 
 /** Preserve positions while keeping YAML keys and delimiters out of the index. */
@@ -22,10 +22,34 @@ function withoutFrontmatter(markdown: string): string {
     match => match.replace(/[^\r\n]/g, " "));
 }
 
+function withoutObsidianComments(source:string):string {
+  if(!source.includes("%%"))return source;
+  const codeRanges:[number,number][]=[];
+  const collect=(node:Nodes):void=>{
+    if(node.type==="code" || node.type==="inlineCode" || (node.type==="html" && node.value.startsWith("<!--")))codeRanges.push([node.position!.start.offset!,node.position!.end.offset!]);
+    else if("children" in node)for(const child of node.children)collect(child);
+  };
+  collect(fromMarkdown(source));
+  const comments:[number,number][]=[];
+  let start=-1;
+  for(const marker of source.matchAll(/%%/g)) {
+    const offset=marker.index!;
+    if(start>=0) {comments.push([start,offset+2]);start=-1;continue;}
+    if(codeRanges.some(([a,b])=>offset>=a && offset<b))continue;
+    let escapes=0;
+    for(let i=offset-1;i>=0 && source[i]==="\\";i--)escapes++;
+    if(escapes%2===0)start=offset;
+  }
+  if(start>=0)comments.push([start,source.length]);
+  let result="",cursor=0;
+  for(const [a,b] of comments) {result+=source.slice(cursor,a)+source.slice(a,b).replace(/[^\n]/g," ");cursor=b;}
+  return result+source.slice(cursor);
+}
+
 /** Root-level CommonMark headings define sections; fences/comments are parsed, not guessed. */
 export function chunkMarkdown(path: string, markdown: string, maxChars = 1200): Chunk[] {
   if (!Number.isInteger(maxChars) || maxChars < 128) throw new Error("Chunk size must be at least 128 characters.");
-  const source = withoutFrontmatter(markdown.replace(/\r\n?/g, "\n"));
+  const source = withoutObsidianComments(withoutFrontmatter(markdown.replace(/\r\n?/g, "\n")));
   const lines = source.split("\n");
   const title = path.replace(/\.md$/i, "").split("/").pop() ?? path;
   const headings = fromMarkdown(source).children.filter((node): node is Heading => node.type === "heading");
@@ -86,5 +110,7 @@ export function chunkMarkdown(path: string, markdown: string, maxChars = 1200): 
 export function embeddingText(chunk: Chunk): string {
   const context = [chunk.title, ...chunk.headings.map(h => h.text)].filter(Boolean).join(" > ");
   // Bound context so a deeply nested heading cannot crowd out the paragraph.
-  return `${context.slice(0, 240)}\n${chunk.text}`.trim();
+  // Retain both the note title and nearest heading when the ancestry is long.
+  const bounded=context.length<=240 ? context : `${context.slice(0,80)} … ${context.slice(-157)}`;
+  return `${bounded}\n${chunk.text}`.trim();
 }

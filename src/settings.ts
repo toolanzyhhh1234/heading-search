@@ -1,4 +1,5 @@
 import type { VectorCodec } from "./core/vectors";
+import policy from "./retrieval-policy.json";
 export type SearchMode="bm25"|"vector"|"hybrid";
 export interface Settings {
   mode:SearchMode;
@@ -7,7 +8,8 @@ export interface Settings {
   excludedFolders:string[];
   resultCount:number;
 }
-export const DEFAULT_SETTINGS:Settings={mode:"bm25",semanticEnabled:false,codec:"int8",excludedFolders:[],resultCount:20};
+const recommendedCodec=(["f32","int8","sq4","rotated-sq4"].includes(policy.recommendedCodec) ? policy.recommendedCodec : "int8") as VectorCodec;
+export const DEFAULT_SETTINGS:Settings={mode:"bm25",semanticEnabled:false,codec:recommendedCodec,excludedFolders:[],resultCount:20};
 export function readSettings(value:unknown):Settings {
   const data=(value && typeof value==="object" ? value : {}) as Partial<Settings>;
   return {

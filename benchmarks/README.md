@@ -25,14 +25,16 @@ The preparation script downloads only public benchmark data and a pinned model i
 ## Method
 
 - BM25: fixed Unicode word analyzer, English stopword removal, Porter stemming, `k1=1.2`, `b=0.75`; title and body have equal weight for the canonical baseline. This is this repository's reproducible BM25 implementation, not a claim to have reproduced a specific Elasticsearch leaderboard score.
+- Title-weighted BM25: the same index with the plugin's existing 2x title weight. No Markdown headings are invented for these datasets. This gives the shipping lexical ranking a separate comparison alongside the canonical baseline.
 - Embedding: the pinned quantized `Xenova/bge-small-en-v1.5` ONNX graph, CLS pooling, L2 normalization, 384 dimensions, 512-token truncation retaining the closing SEP token, and BGE's recommended query instruction. Documents use title plus text.
 - Final quality scores use the exact shipping SIMD WASM engine for **every** document and query. Four independent one-thread workers accelerate benchmark preparation. Separately measured plugin latency uses one worker on 12 evenly spaced documents and 32 queries per dataset. The earlier native ONNX reference run failed a strict 0.999 minimum-cosine agreement check, so those native embeddings are not used for the final quality scores. The native scripts remain as reproducible diagnostics.
+- A Node worker harness loads the unchanged browser worker for repeatability. Timings do not include Obsidian's interface rendering or other application overhead.
 - Exact search: no approximate nearest-neighbor index or candidate filtering. The same corpus is used for BM25, dense search, and compression comparisons.
-- Hybrid: RRF with `k=60`, top 100 candidates from each method. No cross-encoder reranker.
+- Hybrid: RRF of title-weighted BM25 and int8 dense search, with `k=60`, top 100 candidates from each method. No cross-encoder reranker.
 - Metrics: graded nDCG@10 with linear relevance gains, matching BEIR/trec_eval `ndcg_cut`; Recall@10 and MRR@10. Unjudged documents are non-relevant and identical query/document IDs are excluded. Fixed-seed paired bootstrap confidence intervals compare per-query nDCG with BM25. Search timings exclude query encoding; WASM query encoding latency is reported separately. One startup model load is separate again. The [trec_eval implementation](https://github.com/usnistgov/trec_eval/blob/master/m_ndcg_cut.c) defines the gain convention.
 - Compression: compare actual binary byte length (including headers/scales), nDCG changes, and top-10 overlap with float32. Note and heading text metadata is not included in vector-only savings.
 
-The policy is fixed before inspecting results: recommend vector or hybrid only with at least **0.01 absolute macro nDCG@10 improvement**, **no dataset regression**, and a **positive lower paired-bootstrap bound on each dataset**. Otherwise keep heading-aware BM25. Prefer smaller vector storage only with no more than **0.005 nDCG loss on either dataset** and **at least 95% top-10 overlap** with float32.
+The policy is fixed before inspecting results: dense vectors must first beat **both** BM25 baselines with at least **0.01 absolute macro nDCG@10 improvement over the stronger baseline**, **no dataset regression**, and **positive lower paired-bootstrap bounds on each dataset**. A hybrid default must independently clear the same gate. Otherwise keep heading-aware BM25. Prefer smaller vector storage only with no more than **0.005 nDCG loss on either dataset**, **at least 95% top-10 overlap** with float32, and **no more than 1.5x int8 scan p95 latency**.
 
 ## Limits
 

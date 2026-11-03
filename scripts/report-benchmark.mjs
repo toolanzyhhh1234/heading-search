@@ -2,13 +2,14 @@ import { readFile, writeFile } from 'node:fs/promises';
 const summary=JSON.parse(await readFile('benchmarks/results/summary.json','utf8'));
 if(!summary.recommendation || Object.keys(summary.datasets).length!==2)throw new Error('The full benchmark has not completed.');
 const percent=x=>(x*100).toFixed(2);
-const modes=['bm25','f32','int8','sq4','rotated-sq4','hybrid-int8'];
+const modes=['bm25','bm25-title','f32','int8','sq4','rotated-sq4','hybrid-int8'];
 let report=`# Measured retrieval results\n\nRun: ${new Date(summary.createdAt).toLocaleString('en-AU',{timeZone:'Australia/Sydney'})} Australia/Sydney. CPU: ${summary.hardware.cpu}; ${summary.hardware.logicalCPUs} logical CPUs. Model: ${summary.model.id} at revision \`${summary.model.revision}\`.\n\n${summary.runtime}\n\n`;
 report+='## Retrieval quality\n\nnDCG@10 uses BEIR/trec_eval linear graded gains. Higher is better. All test queries search the full corpus.\n\n| Method | SciFact nDCG@10 | NFCorpus nDCG@10 | Macro average |\n| --- | ---: | ---: | ---: |\n';
 for(const mode of modes) {
   const a=summary.datasets.scifact.modes[mode].ndcg10,b=summary.datasets.nfcorpus.modes[mode].ndcg10;
   report+=`| ${mode} | ${a.toFixed(4)} | ${b.toFixed(4)} | ${((a+b)/2).toFixed(4)} |\n`;
 }
+report+='\n`bm25-title` uses the shipped title weight (2x) with no synthetic section headings. These datasets contain titles and abstracts, not Markdown heading hierarchies. Both lexical baselines must be beaten before recommending a vector-based default.\n';
 report+='\n| Method | SciFact Recall@10 | NFCorpus Recall@10 | SciFact MRR@10 | NFCorpus MRR@10 |\n| --- | ---: | ---: | ---: | ---: |\n';
 for(const mode of modes) {
   const a=summary.datasets.scifact.modes[mode],b=summary.datasets.nfcorpus.modes[mode];

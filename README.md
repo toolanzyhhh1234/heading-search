@@ -21,7 +21,7 @@ For the development preview, extract `dist/heading-search-0.1.0.zip` into your v
 
 - CommonMark parsing recognizes ATX (`#`) and setext headings and preserves H1–H6 ancestry.
 - Sections do not cross a heading boundary. Large sections split into bounded pieces, with the title and heading context attached to every piece.
-- Heading-looking text inside fenced code, HTML comments, or blockquotes does not create a new section. YAML frontmatter is excluded.
+- Heading-looking text inside fenced code, HTML comments, Obsidian `%%` comments, or blockquotes does not create a new section. YAML frontmatter and Obsidian comment text are excluded.
 - Keyword ranking gives the note title and higher-level headings extra weight. Body text stays searchable.
 - New, edited, deleted, moved, and excluded notes update incrementally. Result links use source line positions.
 

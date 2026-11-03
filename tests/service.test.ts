@@ -21,12 +21,12 @@ function fixture() {
     remove:async(path:string)=>{strings.delete(path);binaries.delete(path);},
   } as unknown as DataAdapter;
   const app={vault:{adapter,getMarkdownFiles:()=>[...files.values()],getFileByPath:(path:string)=>files.get(path)??null,read:async(file:{path:string})=>contents.get(file.path)!}} as unknown as App;
-  const settings={...DEFAULT_SETTINGS,excludedFolders:[] as string[]};
+  const settings={...DEFAULT_SETTINGS,codec:"int8" as const as import("../src/core/vectors").VectorCodec,excludedFolders:[] as string[]};
   let embeddings=0;
   const embedding={embed:async(texts:string[])=>{embeddings+=texts.length;return texts.map(()=>{const vector=new Float32Array(384);vector[0]=1;return vector;});},dispose:()=>{}} as unknown as EmbeddingClient;
   const service=()=>new SearchService(app,()=>settings,embedding,".obsidian/plugins/heading-search/index",()=>{});
   const put=(path:string,text:string)=>{contents.set(path,text);files.set(path,{path,stat:{mtime:(files.get(path)?.stat.mtime??0)+1,size:text.length}});};
-  return {app,settings,service,put,files,strings,binaries,embeddings:()=>embeddings};
+  return {app,settings,service,put,files,strings,binaries,embedding,embeddings:()=>embeddings};
 }
 
 test("incremental indexing follows edits, moves, exclusions, deletion and restart",async()=>{
@@ -62,4 +62,28 @@ test("interrupted or corrupt cache generations rebuild from notes",async()=>{
   assert.equal((await service.search("recover"))[0].chunk.path,"Note.md");
   f.strings.set(".obsidian/plugins/heading-search/index/current.json",'{"generation":"../../untrusted"}');
   assert.equal(await new IndexStorage(f.app.vault.adapter,".obsidian/plugins/heading-search/index").load(),null);
+});
+test("a long note cannot crowd other matching notes out of the candidate list",async()=>{
+  const f=fixture();
+  f.put("Book.md",Array.from({length:140},(_,i)=>`# Backups ${i}\nStorage backup guidance.`).join("\n"));
+  f.put("Checklist.md","# Checklist\nKeep backups of storage devices.");
+  const service=f.service();await service.load();await service.refresh();
+  const paths=(await service.search("backups storage")).map(r=>r.chunk.path);
+  assert.ok(paths.includes("Book.md"));assert.ok(paths.includes("Checklist.md"));assert.equal(paths.length,2);
+});
+test("an edit during embedding supersedes stale work before the index continues",async()=>{
+  const f=fixture();f.settings.semanticEnabled=true;f.put("Note.md","# Original\nOld topic.");
+  const originalEmbed=f.embedding.embed.bind(f.embedding);
+  let release!:()=>void,announce!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  const started=new Promise<void>(resolve=>{announce=resolve;});
+  let first=true;
+  f.embedding.embed=async(texts:string[])=>{if(first){first=false;announce();await gate;}return originalEmbed(texts);};
+  const service=f.service();await service.load();
+  const original=service.refresh();await started;
+  f.put("Note.md","# Updated\nFresh content.");const updated=service.refresh();release();
+  await Promise.all([original,updated]);
+  assert.equal((await service.search("old topic")).length,0);
+  assert.equal((await service.search("fresh content"))[0].chunk.headings[0].text,"Updated");
+  assert.equal(service.vectorCount,1);
 });

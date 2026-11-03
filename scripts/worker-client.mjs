@@ -1,6 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 
 export class CPUWorker {
   constructor() {
@@ -26,6 +27,11 @@ export class CPUWorker {
   async initialize() {
     const spec = JSON.parse(await readFile('src/model-spec.json', 'utf8'));
     const directory = resolve('.cache/models', spec.id, spec.revision);
+    for(const file of spec.files) {
+      const bytes=await readFile(resolve(directory,file.path));
+      if(bytes.length!==file.bytes || createHash('sha256').update(bytes).digest('hex')!==file.sha256)
+        throw new Error(`Benchmark model asset does not match its pinned hash: ${file.path}`);
+    }
     const model = await readFile(resolve(directory, 'onnx/model_quantized.onnx'));
     const tokenizer = JSON.parse(await readFile(resolve(directory, 'tokenizer.json'), 'utf8'));
     const config = JSON.parse(await readFile(resolve(directory, 'tokenizer_config.json'), 'utf8'));

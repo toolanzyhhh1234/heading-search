@@ -32,3 +32,21 @@ test("empty headings remain searchable, empty notes produce no chunk",()=>{
   assert.equal(chunkMarkdown("N.md","").length,0);
   assert.deepEqual(chunkMarkdown("N.md","# Empty\n## Also empty").map(c=>[c.text,c.line]),[["",0],["",1]]);
 });
+test("heading labels retain image alt text and discard HTML tags",()=>{
+  const [chunk]=chunkMarkdown("Guide.md","# <span>Install</span> ![steps](image.png)\nInstructions");
+  assert.equal(chunk.headings[0].text,"Install steps");
+});
+test("long embedding context keeps the nearest heading and note title",()=>{
+  const chunks=chunkMarkdown("My note.md",`# ${"Parent ".repeat(80)}\n## Specific leaf\nUseful paragraph`);
+  const text=embeddingText(chunks.at(-1)!);
+  assert.ok(text.startsWith("My note >"));assert.match(text,/Specific leaf\nUseful paragraph$/);
+  assert.ok(text.split("\n")[0].length<=240);
+});
+test("Obsidian comments hide headings and text, while code literals remain intact",()=>{
+  const md="# Visible\nFirst\n%%\n# Hidden\nSecret words\n%%\n```md\n%% literal %%\n# Code\n```\n## Next\nLast";
+  const chunks=chunkMarkdown("N.md",md);
+  assert.deepEqual(chunks.map(c=>c.headings.at(-1)?.text),["Visible","Next"]);
+  assert.ok(chunks.every(c=>!c.text.includes("Secret words")));assert.match(chunks[0].text,/%% literal %%/);
+  assert.equal(chunks[1].line,11);
+  assert.equal(chunkMarkdown("N.md","# One\n<!-- %% literal -->\n## Two\nBody").at(-1)?.headings.at(-1)?.text,"Two");
+});

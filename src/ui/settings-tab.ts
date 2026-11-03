@@ -3,6 +3,7 @@ import type HeadingSearchPlugin from "../main";
 import type { SearchMode } from "../settings";
 import type { VectorCodec } from "../core/vectors";
 import { sharedModelRoot } from "../embedding/model-store";
+import policy from "../retrieval-policy.json";
 
 export class SearchSettingsTab extends PluginSettingTab {
   constructor(app:App,private plugin:HeadingSearchPlugin) {super(app,plugin);}
@@ -23,11 +24,11 @@ export class SearchSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName("Optional semantic search").setHeading();
     containerEl.createEl("p",{text:"BGE-small runs on your CPU. Setup downloads about 35 MB from Hugging Face once per computer user. Your notes and queries stay on this computer. No API key or separate app is needed."});
     const status=containerEl.createDiv({cls:"heading-search-model-status",attr:{role:"status","aria-live":"polite"}});
-    status.setText(this.plugin.setupMessage || "The model is shared by all your vaults.");
+    status.setText(this.plugin.setupMessage || (this.plugin.sharedModelAvailable ? "The shared model is already installed. You can use it here without downloading it again." : "The model is shared by all your vaults."));
     new Setting(containerEl).setName(this.plugin.settings.semanticEnabled ? "Shared model enabled" : "Set up the shared model")
       .setDesc("A model already cached by another vault is reused, including when offline.")
       .addButton(button=>{
-        button.setButtonText(this.plugin.settings.semanticEnabled ? "Check / repair model" : "Enable semantic search").setCta().setDisabled(this.plugin.settingUp);
+        button.setButtonText(this.plugin.settings.semanticEnabled ? "Check / repair model" : this.plugin.sharedModelAvailable ? "Use shared model" : "Enable semantic search").setCta().setDisabled(this.plugin.settingUp);
         button.onClick(async()=>{
           button.setDisabled(true);
           try {await this.plugin.setupSemantic(message=>status.setText(message));}
@@ -43,10 +44,13 @@ export class SearchSettingsTab extends PluginSettingTab {
       }));
     new Setting(containerEl).setName("Vector storage")
       .setDesc("8-bit saves about 75% of vector space. 4-bit choices are experimental; changing this rebuilds embeddings in this vault.")
-      .addDropdown(dropdown=>dropdown.addOptions({int8:"8-bit (recommended)",f32:"Float32 (reference)",sq4:"4-bit scalar (experimental)","rotated-sq4":"4-bit rotated (experimental)"})
-        .setValue(this.plugin.settings.codec).onChange(async value=>{
+      .addDropdown(dropdown=>{
+        const options:Record<string,string>={int8:"8-bit",f32:"Float32 (reference)",sq4:"4-bit scalar (experimental)","rotated-sq4":"4-bit rotated (experimental)"};
+        options[policy.recommendedCodec]+=" (recommended)";
+        dropdown.addOptions(options).setValue(this.plugin.settings.codec).onChange(async value=>{
           this.plugin.settings.codec=value as VectorCodec;await this.plugin.saveSettings();this.plugin.scheduleRefresh();
-        }));
+        });
+      });
     new Setting(containerEl).setName("Indexing").setHeading();
     new Setting(containerEl).setName("Excluded folders")
       .setDesc("One vault-relative folder per line, such as Private or Attachments. Excluded notes are removed from this vault's index.")

@@ -88,17 +88,24 @@ export class PackedVectors {
       bytes.length!==16+this.stride*this.count || ids.length!==this.count) throw new Error("Vector index is truncated or incompatible.");
   }
 
-  search(query:Float32Array, limit=20):Ranked[] {
+  search(query:Float32Array, limit=20, groupKey?:(id:string)=>string):Ranked[] {
     if(query.length!==this.dimensions || query.some(x=>!Number.isFinite(x))) throw new Error("Query dimensions do not match the vector index.");
+    if(limit<1)return [];
     const q=this.codec==="rotated-sq4" ? rotate(query) : query;
     const result:Ranked[]=[];
+    const groups=new Map<string,Ranked>();
     for(let row=0;row<this.count;row++) {
       const score=this.scoreRow(row,q);
+      if(groupKey) {
+        const entry={id:this.ids[row],score},group=groupKey(entry.id),previous=groups.get(group);
+        if(!previous || score>previous.score || (score===previous.score && entry.id<previous.id))groups.set(group,entry);
+        continue;
+      }
       if(result.length===limit && score<=result[result.length-1].score) continue;
       result.push({id:this.ids[row],score}); result.sort((a,b)=>b.score-a.score || a.id.localeCompare(b.id));
       if(result.length>limit) result.pop();
     }
-    return result;
+    return groupKey ? [...groups.values()].sort((a,b)=>b.score-a.score || a.id.localeCompare(b.id)).slice(0,limit) : result;
   }
 
   /** Copy encoded rows when incrementally updating a vault; never retain float32 copies. */

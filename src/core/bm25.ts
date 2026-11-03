@@ -58,7 +58,7 @@ export class BM25 {
     this.termsByDocument.delete(id);
   }
 
-  search(query: string, limit = 20): Ranked[] {
+  search(query: string, limit = 20, groupKey?: (id:string)=>string): Ranked[] {
     if (!this.lengths.size) return [];
     const scores = new Map<string, number>();
     const avg = this.totalLength / this.lengths.size || 1;
@@ -71,7 +71,16 @@ export class BM25 {
         scores.set(id, (scores.get(id) ?? 0) + idf * frequency * (this.k1 + 1) / (frequency + normalization));
       }
     }
-    return [...scores].map(([id, score]) => ({ id, score }))
+    let ranked=[...scores].map(([id, score]) => ({ id, score }));
+    if(groupKey) {
+      const groups=new Map<string,Ranked>();
+      for(const entry of ranked) {
+        const group=groupKey(entry.id),previous=groups.get(group);
+        if(!previous || entry.score>previous.score || (entry.score===previous.score && entry.id<previous.id))groups.set(group,entry);
+      }
+      ranked=[...groups.values()];
+    }
+    return ranked
       .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id)).slice(0, limit);
   }
 

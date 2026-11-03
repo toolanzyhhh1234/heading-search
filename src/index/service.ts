@@ -125,14 +125,20 @@ export class SearchService {
   async search(query:string,mode:SearchMode=this.settings().mode):Promise<SearchResult[]> {
     if(!query.trim())return [];
     const settings=this.settings();
-    const lexical=this.lexical.search(query,100);
+    const group=(id:string)=>this.chunks.get(id)?.path??id;
+    const lexical=this.lexical.search(query,100,group);
     let ranking=lexical;
     if(mode!=="bm25") {
       if(!settings.semanticEnabled)throw new Error("Enable semantic search in Heading Search settings, or choose BM25.");
       if(!this.vectors?.count)throw new Error("Semantic indexing is still starting. BM25 search is ready now.");
       const [embedding]=await this.embedding.embed([query],true);
-      const dense=this.vectors.search(embedding,100);
-      ranking=mode==="hybrid" ? reciprocalRankFusion([lexical,dense],100) : dense;
+      const dense=this.vectors.search(embedding,100,group);
+      if(mode==="hybrid") {
+        const sections=new Map(lexical.map(entry=>[group(entry.id),entry.id]));
+        for(const entry of dense)if(!sections.has(group(entry.id)))sections.set(group(entry.id),entry.id);
+        const notes=(list:typeof lexical)=>list.map(entry=>({id:group(entry.id),score:entry.score}));
+        ranking=reciprocalRankFusion([notes(lexical),notes(dense)],100).map(entry=>({id:sections.get(entry.id)!,score:entry.score}));
+      } else ranking=dense;
     }
     // Display the strongest section per note. Each result opens at its source line.
     const paths=new Set<string>(),results:SearchResult[]=[];
