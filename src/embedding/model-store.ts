@@ -20,6 +20,16 @@ async function ensureDirectory(path:string):Promise<void> {
     }
   }
 }
+async function promoteFile(source:string,target:string):Promise<void> {
+  for(let attempt=0;attempt<8;attempt++) {
+    try {await fs.rename(source,target);return;}
+    catch(error) {
+      // Virus scanners and other vaults can briefly hold a Windows file handle.
+      if(!["EPERM","EACCES","EBUSY"].includes((error as NodeJS.ErrnoException).code??"") || attempt===7)throw error;
+      await new Promise(resolve=>setTimeout(resolve,25*2**attempt));
+    }
+  }
+}
 
 /** One cache per OS user, independent of vault paths and plugin installations. */
 export class ModelStore {
@@ -73,7 +83,7 @@ export class ModelStore {
         if(data.length!==file.bytes || digest(data)!==file.sha256) throw new Error(`Integrity check failed for ${file.path}. Please retry setup.`);
         await ensureDirectory(dirname(target));
         const temporary=`${target}.${randomUUID()}.partial`;
-        try {await fs.writeFile(temporary,data,{flag:"wx"});await fs.rename(temporary,target);}
+        try {await fs.writeFile(temporary,data,{flag:"wx"});await promoteFile(temporary,target);}
         finally {await fs.unlink(temporary).catch(()=>{});}
       }
       progress("Shared model ready. It can now be used offline in every vault.");

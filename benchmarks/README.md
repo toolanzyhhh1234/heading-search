@@ -42,4 +42,4 @@ SciFact and NFCorpus are English scientific/medical retrieval tasks, not an Obsi
 
 The rotated scalar experiment is inspired by TurboQuant but is not the paper's full algorithm. It uses a fixed randomized Hadamard transform padded to 512 dimensions, a fixed 16-value Gaussian codebook, and norm correction. It has neither learned per-corpus codebooks nor QJL residual correction. See the [TurboQuant paper](https://arxiv.org/abs/2504.19874) for the full method; published GPU/KV-cache speedups do not transfer automatically to this CPU plugin.
 
-Results and a readable report are generated after the full run. A reranker is intentionally absent until it shows a worthwhile CPU latency/quality tradeoff.
+Read the [measured results](RESULTS.md) and [raw summary](results/summary.json). A reranker is intentionally absent until it shows a worthwhile CPU latency/quality tradeoff.

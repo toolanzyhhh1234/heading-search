@@ -1,6 +1,6 @@
 {
   "recommendedMode": "bm25",
   "recommendedCodec": "int8",
-  "benchmarkDate": null,
-  "scope": "Pending full benchmark; conservative BM25 default."
+  "benchmarkDate": "2026-11-03T05:29:33.869Z",
+  "scope": "SciFact and NFCorpus full test splits only"
 }

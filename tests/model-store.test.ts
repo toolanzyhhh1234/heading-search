@@ -4,6 +4,7 @@ import { mkdtemp, rm, readFile, writeFile, mkdir, utimes } from "node:fs/promise
 import { join } from "node:path";
 import { resolve, sep } from "node:path";
 import { createHash } from "node:crypto";
+import { promises as fs } from "node:fs";
 import { ModelStore, type ModelDefinition } from "../src/embedding/model-store";
 
 const data=new TextEncoder().encode("test model asset");
@@ -39,5 +40,17 @@ test("stale download leases from a crashed vault are recoverable",async()=>{
     const store=new ModelStore(async()=>Uint8Array.from(data).buffer,root,definition);
     const lock=join(store.directory,".download-lock");await mkdir(lock,{recursive:true});
     await utimes(lock,new Date(0),new Date(0));await store.ensure();assert.equal(await store.isInstalled(),true);
+  } finally {await cleanup(root);}
+});
+test("transient Windows file handles retry promotion without downloading again",async context=>{
+  const root=await temporaryRoot();
+  try {
+    const original=fs.rename.bind(fs);let attempts=0,downloads=0;
+    context.mock.method(fs,"rename",async(...args:Parameters<typeof fs.rename>)=>{
+      if(++attempts<=2)throw Object.assign(new Error("File temporarily busy"),{code:"EPERM"});
+      return original(...args);
+    });
+    const store=new ModelStore(async()=>{downloads++;return Uint8Array.from(data).buffer;},root,definition);
+    await store.ensure();assert.equal(downloads,1);assert.equal(await store.isInstalled(),true);
   } finally {await cleanup(root);}
 });

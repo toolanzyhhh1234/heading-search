@@ -10,6 +10,7 @@ for(const mode of modes) {
   report+=`| ${mode} | ${a.toFixed(4)} | ${b.toFixed(4)} | ${((a+b)/2).toFixed(4)} |\n`;
 }
 report+='\n`bm25-title` uses the shipped title weight (2x) with no synthetic section headings. These datasets contain titles and abstracts, not Markdown heading hierarchies. Both lexical baselines must be beaten before recommending a vector-based default.\n';
+report+='\nAll dense rows use the same quantized ONNX model weights. The f32/int8/sq4 labels describe stored vector precision, not different model weights.\n';
 report+='\n| Method | SciFact Recall@10 | NFCorpus Recall@10 | SciFact MRR@10 | NFCorpus MRR@10 |\n| --- | ---: | ---: | ---: | ---: |\n';
 for(const mode of modes) {
   const a=summary.datasets.scifact.modes[mode],b=summary.datasets.nfcorpus.modes[mode];
@@ -25,8 +26,11 @@ for(const [name,d] of Object.entries(summary.datasets))report+=`| ${name} | ${d.
 report+=`\nCold worker/model startup: ${summary.modelLoadMs.toFixed(0)} ms. Timings depend on this machine and background load; no GPU was used. First-time vault indexing can take minutes, especially for long documents. BM25 remains available during embedding.\n\n`;
 report+='## Decision\n\n';
 report+=`Recommended retrieval: **${summary.recommendation.defaultMode}**. Recommended vector codec: **${summary.recommendation.codec}**.\n\n${summary.recommendation.reason}\n\n`;
+if(summary.recommendation.defaultMode==='bm25')report+='Dense-only gains have confidence intervals spanning zero, so the pure-vector gate did not pass. Optional hybrid search scored highest and had positive paired intervals against both BM25 baselines on both tasks. BM25 remains the initial recommendation under the requested conservative pivot rule, with no model download or embedding latency.\n\n';
 report+='| Candidate | SciFact nDCG gain 95% paired CI | NFCorpus nDCG gain 95% paired CI |\n| --- | ---: | ---: |\n';
-for(const mode of ['int8','hybrid-int8'])report+=`| ${mode} | ${summary.datasets.scifact.modes[mode].ndcgGainOverBM25CI95.map(x=>x.toFixed(4)).join(' to ')} | ${summary.datasets.nfcorpus.modes[mode].ndcgGainOverBM25CI95.map(x=>x.toFixed(4)).join(' to ')} |\n`;
+for(const mode of ['int8','hybrid-int8'])for(const [label,key] of [['plain BM25','ndcgGainOverBM25CI95'],['title-weighted BM25','ndcgGainOverTitleBM25CI95']])
+  report+=`| ${mode} vs ${label} | ${summary.datasets.scifact.modes[mode][key].map(x=>x.toFixed(4)).join(' to ')} | ${summary.datasets.nfcorpus.modes[mode][key].map(x=>x.toFixed(4)).join(' to ')} |\n`;
+report+=`\nCompression acceptance requires no more than ${summary.policy.maxQuantizationNdcgLoss} absolute nDCG loss on either dataset, at least 95% top-10 overlap, and scan p95 no slower than ${summary.policy.maxQuantizationScanSlowdown}x int8.\n`;
 report+='\nThe plugin initially opens with BM25 because it needs no model. This recommendation applies after optional model setup. Two English scientific datasets do not establish a universal winner for personal notes, multilingual vaults, or heading weights. The rotated-SQ4 experiment is not full TurboQuant. A reranker was not benchmarked or shipped. See [methodology](README.md).\n';
 await writeFile('benchmarks/RESULTS.md',report);
 await writeFile('src/retrieval-policy.json',JSON.stringify({recommendedMode:summary.recommendation.defaultMode==='hybrid-int8'?'hybrid':summary.recommendation.defaultMode==='int8'?'vector':'bm25',recommendedCodec:summary.recommendation.codec,benchmarkDate:summary.createdAt,scope:'SciFact and NFCorpus full test splits only'},null,2)+'\n');

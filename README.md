@@ -42,7 +42,9 @@ Only model weights and tokenizer data are shared. Each vault's note text, index,
 
 ## Retrieval and storage decisions
 
-Keyword BM25 is the initial default and needs no model download. Semantic search and reciprocal-rank hybrid search are available after setup. The benchmark decision gate compares them against BM25 and keeps heading-aware BM25 as the recommendation unless vectors demonstrate a reliable improvement. See [benchmark methodology and results](benchmarks/README.md).
+Keyword BM25 is the initial default and needs no model download. Semantic search and reciprocal-rank hybrid search are available after setup. The benchmark decision gate compares them against BM25 and keeps heading-aware BM25 as the recommendation unless vectors demonstrate a reliable improvement. See the [measured results](benchmarks/RESULTS.md) and [methodology](benchmarks/README.md).
+
+In this release, pure-vector gains were inconclusive at the chosen confidence threshold, so heading-aware BM25 remains the default. Optional **Hybrid** search scored highest on both full benchmark collections. Choose it after model setup if you prefer that measured quality improvement over the extra CPU work.
 
 Vector data is stored in a binary file rather than JSON floating-point arrays:
 
@@ -56,6 +58,8 @@ Vector data is stored in a binary file rather than JSON floating-point arrays:
 These sizes include per-vector scale/norm data; each file also has a 16-byte header. Text and heading metadata are additional. The rotated 4-bit experiment uses a fixed sign/Hadamard rotation and Gaussian scalar codebook, inspired by the rotation-and-quantization approach studied in TurboQuant. It is **not a full TurboQuant implementation**: there is no QJL residual correction, and its padded 512-dimensional representation has measurable overhead. Compression is accepted only when measured retrieval loss is small. The 4-bit choices remain explicitly experimental.
 
 An expensive reranker is not included in this preview. The initial focus is responsive CPU search; a reranker needs separate quality and latency evidence before becoming a default.
+
+Vector retrieval currently uses an exact scan. Query time grows with the number of indexed sections. Initial embedding of a large vault can take minutes; keyword search stays available while it runs.
 
 ## Privacy and network use
 
