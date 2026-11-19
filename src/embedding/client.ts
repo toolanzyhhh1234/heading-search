@@ -4,7 +4,7 @@ import type { BackendInfo, Calibration } from "./backends";
 import type { DeviceProfile } from "./device-profile";
 import type { ModelConfig } from "./engine";
 
-type Response={info?:BackendInfo;vectors?:ArrayBuffer[];calibration?:Calibration};
+type Response={info?:BackendInfo;vectors?:ArrayBuffer[];calibration?:Calibration|Calibration["batch"]};
 
 /** One embedding worker and its request/response bookkeeping. */
 class Channel {
@@ -93,8 +93,8 @@ export class EmbeddingClient {
     if(!await this.runtime.isInstalled()) fail("The fast engine is missing or damaged. Open Heading Search settings and choose Check / repair.");
     try {
       holdNativeRuntime(this.runtimeDirectory);
-      const {info}=await this.open().call("initialize-native",{runtimeDirectory:this.runtimeDirectory,modelPath:assets.modelPath,
-        tokenizer:assets.tokenizer,config:assets.config,threads:this.options.threads,device:profile.device,model:this.options.model});
+      const {info}=await this.open().call("initialize-native",{runtimeDirectory:this.runtimeDirectory,modelPath:assets.modelPath,gpuModelPath:assets.gpuModelPath,
+        tokenizer:assets.tokenizer,config:assets.config,threads:this.options.threads,device:profile.device,gpuBatch:profile.gpuBatch,model:this.options.model});
       this.info=info;this.fallbackReason=info?.fallback;this.options.changed?.();
     } catch(error) {
       // Security software or a missing system library can block native code.
@@ -110,12 +110,15 @@ export class EmbeddingClient {
     return (vectors??[]).map(buffer=>new Float32Array(buffer));
   }
   /** Times int8 on the CPU against fp32 on DirectML in a separate, short-lived worker. */
-  async calibrate():Promise<Calibration> {
+  calibrate():Promise<Calibration> {return this.measure("calibrate") as Promise<Calibration>;}
+  /** Times DirectML's batch tiers, once the GPU has been chosen. */
+  calibrateBatch():Promise<NonNullable<Calibration["batch"]>> {return this.measure("calibrate-batch") as Promise<NonNullable<Calibration["batch"]>>;}
+  private async measure(type:"calibrate"|"calibrate-batch"):Promise<unknown> {
     holdNativeRuntime(this.runtimeDirectory);
     const {tokenizer,config}=await this.models("int8").read(),channel=new Channel(()=>{});
     try {
-      const {calibration}=await channel.call("calibrate",{runtimeDirectory:this.runtimeDirectory,
-        cpuModelPath:this.models("int8").modelPath,gpuModelPath:this.models("fp32").modelPath,threads:this.options.threads,tokenizer,config,model:this.options.model});
+      const {calibration}=await channel.call(type,{runtimeDirectory:this.runtimeDirectory,
+        cpuModelPath:this.models("int8").modelPath,gpuModelPath:this.models("fp32").gpuModelPath,threads:this.options.threads,tokenizer,config,model:this.options.model});
       return calibration!;
     } finally {channel.close(new Error("Calibration finished."));}
   }

@@ -21,27 +21,30 @@ for(const dataset of ['scifact','nfcorpus']) {
   for(let i=0;i<64;i++){const d=corpus[Math.floor(i*corpus.length/64)];documents.push(`${d.title}\n${d.text}`.trim());}
   for(let i=0;i<16;i++)queries.push(all[Math.floor(i*all.length/16)].text);
 }
+const specWeights=new Set(Object.keys(JSON.parse(await readFile(spec,'utf8')).weights));
 const engines=[
   {name:'native-cpu-int8',options:{runtimeDirectory,spec,weights:'int8',device:'native-cpu'}},
   {name:'native-cpu-fp32',options:{runtimeDirectory,spec,weights:'fp32',device:'native-cpu'}},
-  ...(process.platform==='win32'?[{name:'directml-fp32',options:{runtimeDirectory,spec,weights:'fp32',device:'directml'}}]:[]),
-];
+  ...(process.platform==='win32'?[{name:'directml-fp32',options:{runtimeDirectory,spec,weights:'fp32',device:'directml'}},
+    {name:'directml-fp32-large',options:{runtimeDirectory,spec,weights:'fp32',device:'directml',gpuBatch:'large'}}]:[]),
+].filter(({options})=>specWeights.has(options.weights)); // candidates may ship only some weight precisions
 const results={createdAt:new Date().toISOString(),model:JSON.parse(await readFile(spec,'utf8')).id,runtime:`onnxruntime-node ${runtime.version}`,
   hardware:{cpu:os.cpus()[0].model,logicalCPUs:os.cpus().length,platform:`${os.platform()}-${os.arch()}`},
-  sample:`${documents.length} evenly spaced SciFact/NFCorpus documents (title + text), sent 16 at a time as the plugin indexes; ${queries.length} queries one at a time`,
+  sample:`${documents.length} evenly spaced SciFact/NFCorpus documents (title + text), sent in the engine's batch size as the plugin indexes (16, or 64 for large GPU batches) after one warm-up pass; ${queries.length} queries one at a time`,
   engines:{}};
 for(const {name,options} of engines) {
   const worker=new CPUWorker(options);
   try {
     const start=performance.now();const info=await worker.initialize();const loadMs=performance.now()-start;
-    await worker.embed(documents.slice(0,16));await worker.embed([queries[0]],true); // warm caches and GPU shapes
+    const size=info.batchTexts,index=async()=>{for(let i=0;i<documents.length;i+=size)await worker.embed(documents.slice(i,i+size));};
+    await index();await worker.embed([queries[0]],true); // warm caches and every GPU shape
     const indexStart=performance.now();
-    for(let i=0;i<documents.length;i+=16)await worker.embed(documents.slice(i,i+16));
+    await index();
     const msPerDocument=(performance.now()-indexStart)/documents.length;
     const latencies=[];
     for(const query of queries){const t=performance.now();await worker.embed([query],true);latencies.push(performance.now()-t);}
-    results.engines[name]={label:info.label,fallback:info.fallback,weights:options.weights,loadMs,msPerDocument,queryP50Ms:percentile(latencies,.5),queryP95Ms:percentile(latencies,.95)};
-    console.log(`${name.padEnd(16)} ${info.label.padEnd(36)} ${msPerDocument.toFixed(1).padStart(7)} ms/document  query p50 ${percentile(latencies,.5).toFixed(1)} ms`);
+    results.engines[name]={label:info.label,fallback:info.fallback,weights:options.weights,batchTexts:size,loadMs,msPerDocument,queryP50Ms:percentile(latencies,.5),queryP95Ms:percentile(latencies,.95)};
+    console.log(`${name.padEnd(20)} ${info.label.padEnd(36)} ${msPerDocument.toFixed(1).padStart(7)} ms/document  query p50 ${percentile(latencies,.5).toFixed(1)} ms`);
   } finally {await worker.dispose();}
 }
 await writeFile(`benchmarks/results/${output}`,JSON.stringify(results,null,2)+'\n');

@@ -1217,6 +1217,10 @@ The plugin downloads the ONNX conversion published at
 https://huggingface.co/onnx-community/granite-embedding-small-english-r2-ONNX (pinned revision in src/model-spec.json)
 when the user sets up semantic search. The model weights are not part of the plugin release.
 
+Modified file: the plugin bundles src/assets/granite-small-r2.gpu.onnx, a modified copy of that conversion's
+onnx/model.onnx graph (no weights) made by scripts/patch-gpu-graph.py. Each Gelu node is rewritten as the equivalent
+0.5 * x * (1 + erf(x / sqrt(2))) so that DirectML can run it; the graph's metadata records this change.
+
 
 ## onnxruntime-LICENSE.txt
 

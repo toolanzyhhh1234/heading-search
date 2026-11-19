@@ -1,15 +1,15 @@
-"""Fetch public BEIR test collections and pin model assets. No private vault data."""
+"""Fetch public BEIR test collections. No private vault data.
+
+Model files are pinned and fetched separately by scripts/pin-model.mjs, from the spec they belong to. (This script
+used to pin bge-small itself and, after the switch to Granite, would have overwritten src/model-spec.json.)
+"""
 from pathlib import Path
 import hashlib
 import json
 import zipfile
 import requests
-import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
-parser = argparse.ArgumentParser()
-parser.add_argument('--update-model', action='store_true', help='Explicitly repin the model to the current Hub revision.')
-args = parser.parse_args()
 
 def fetch(url, path):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -36,31 +36,5 @@ for dataset in ['scifact', 'nfcorpus']:
     sources[dataset] = {'url': url, 'sha256': digest}
     print(f'{dataset}: downloaded and extracted', flush=True)
 
-model = 'Xenova/bge-small-en-v1.5'
-existing_path = ROOT / 'src' / 'model-spec.json'
-existing = json.loads(existing_path.read_text()) if existing_path.exists() and not args.update_model else None
-if existing:
-    revision = existing['revision']
-else:
-    response = requests.get(f'https://huggingface.co/api/models/{model}', timeout=60)
-    response.raise_for_status()
-    revision = response.json()['sha']
-files = []
-for name in ['tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx']:
-    target = ROOT / '.cache' / 'models' / model / revision / name
-    url = f'https://huggingface.co/{model}/resolve/{revision}/{name}'
-    digest = fetch(url, target)
-    if existing:
-        expected = next(file for file in existing['files'] if file['path'] == name)
-        if digest != expected['sha256']:
-            raise ValueError(f'Pinned model asset checksum mismatch: {name}')
-    files.append({'path': name, 'sha256': digest, 'bytes': target.stat().st_size})
-    print(f'{name}: {target.stat().st_size:,} bytes', flush=True)
-spec = {
-    'id': model, 'revision': revision, 'dimensions': 384, 'maxTokens': 512,
-    'pooling': 'cls', 'queryPrefix': 'Represent this sentence for searching relevant passages: ',
-    'license': 'MIT (BAAI upstream model)', 'files': files
-}
-(ROOT / 'src' / 'model-spec.json').write_text(json.dumps(spec, indent=2) + '\n')
-(ROOT / 'benchmarks' / 'sources.json').write_text(json.dumps(sources, indent=2) + '\n')
-print('Pinned model specification written.', flush=True)
+(ROOT / 'benchmarks' / 'sources.json').write_text(json.dumps(sources, indent=2) + '\n', newline='\n')
+print('Benchmark data ready. Fetch the pinned model with: node scripts/pin-model.mjs src/model-spec.json', flush=True)

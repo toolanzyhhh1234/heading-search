@@ -20,7 +20,7 @@ if (process.argv[1]?.replaceAll('\\', '/').endsWith('/scripts/build.mjs')) {
     entryPoints: ['src/main.ts'], outfile: 'main.js', bundle: true, format: 'cjs',
     platform: 'node', target: 'es2022', external: ['obsidian', 'electron'],
     define: {EMBEDDING_WORKER_SOURCE: JSON.stringify(source)},
-    sourcemap: false, minify: false, legalComments: 'inline',
+    loader: {'.onnx': 'binary'}, sourcemap: false, minify: false, legalComments: 'inline',
     banner: {js: `/*!\n${(license+'\n'+notices).replaceAll('*/','* /')}\n*/`},
   };
   if (process.argv.includes('--watch')) { const ctx = await context(options); await ctx.watch(); }

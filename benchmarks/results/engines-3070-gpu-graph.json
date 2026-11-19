@@ -1,0 +1,49 @@
+{
+  "createdAt": "2026-11-19T11:50:44.788Z",
+  "model": "onnx-community/granite-embedding-small-english-r2-ONNX",
+  "runtime": "onnxruntime-node 1.22.0",
+  "hardware": {
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12600KF",
+    "logicalCPUs": 16,
+    "platform": "win32-x64"
+  },
+  "sample": "128 evenly spaced SciFact/NFCorpus documents (title + text), sent in the engine's batch size as the plugin indexes (16, or 64 for large GPU batches) after one warm-up pass; 32 queries one at a time",
+  "engines": {
+    "native-cpu-int8": {
+      "label": "Native CPU (4 threads)",
+      "weights": "int8",
+      "batchTexts": 16,
+      "loadMs": 469.65070000000003,
+      "msPerDocument": 352.781753125,
+      "queryP50Ms": 23.77500000000873,
+      "queryP95Ms": 52.9429999999993
+    },
+    "native-cpu-fp32": {
+      "label": "Native CPU (4 threads)",
+      "weights": "fp32",
+      "batchTexts": 16,
+      "loadMs": 1025.015499999994,
+      "msPerDocument": 454.3664726562499,
+      "queryP50Ms": 41.44750000000931,
+      "queryP95Ms": 109.38750000001164
+    },
+    "directml-fp32": {
+      "label": "DirectML GPU (queries on the CPU)",
+      "weights": "fp32",
+      "batchTexts": 16,
+      "loadMs": 2223.162400000001,
+      "msPerDocument": 30.46628359374995,
+      "queryP50Ms": 29.920799999992596,
+      "queryP95Ms": 95.4493000000075
+    },
+    "directml-fp32-large": {
+      "label": "DirectML GPU (queries on the CPU)",
+      "weights": "fp32",
+      "batchTexts": 64,
+      "loadMs": 2021.85520000002,
+      "msPerDocument": 14.66280390625002,
+      "queryP50Ms": 32.47609999999986,
+      "queryP95Ms": 129.48890000002575
+    }
+  }
+}

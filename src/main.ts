@@ -6,7 +6,7 @@ import { modelConfig, type ModelConfig } from "./embedding/engine";
 import spec from "./model-spec.json";
 import { ModelStore, modelDefinition, modelKey, type ModelWeights, type Download } from "./embedding/model-store";
 import { RuntimeStore } from "./embedding/runtime-store";
-import { DEFAULT_PROFILE, DeviceProfileStore, chooseDevice, type DeviceProfile } from "./embedding/device-profile";
+import { CALIBRATION_VERSION, DEFAULT_PROFILE, DeviceProfileStore, chooseDevice, chooseGpuBatch, type DeviceProfile } from "./embedding/device-profile";
 import { SearchService } from "./index/service";
 import { SearchModal } from "./ui/search-modal";
 import { SearchSettingsTab } from "./ui/settings-tab";
@@ -59,7 +59,8 @@ export default class HeadingSearchPlugin extends Plugin {
     return store;
   }
   private async checkShared():Promise<void> {
-    const [model,runtime]=await Promise.all([this.model(this.profile.weights).isInstalled(),this.runtimeStore.isInstalled()]);
+    // isReady also installs files bundled with a plugin update (the GPU graph) beside weights already on disk.
+    const [model,runtime]=await Promise.all([this.model(this.profile.weights).isReady(),this.runtimeStore.isInstalled()]);
     this.sharedModelAvailable=model && (runtime || !this.runtimeStore.supported);
   }
   private openSearch():void {new SearchModal(this.app,this.service,{...this.settings}).open();}
@@ -85,20 +86,29 @@ export default class HeadingSearchPlugin extends Plugin {
 
   /**
    * Pick the device once per computer. int8 on the CPU is always installed; on Windows, fp32 is fetched to time
-   * DirectML and kept only if the GPU wins. A saved choice is reused so re-measurement noise never forces re-embedding.
+   * DirectML and kept only if the GPU wins, which then also times its batch tier. A saved choice is reused so
+   * re-measurement noise never forces re-embedding; a new model or calibration method is measured again.
    */
   private async chooseProfile(update:(message:string)=>void,allowGpu:boolean,remeasure:boolean):Promise<DeviceProfile> {
     await this.model("int8").ensure(update);
     const saved=await this.profiles.read();
-    if(saved && saved.allowGpu===allowGpu && saved.model===modelKey && !remeasure && await this.model(saved.weights).isInstalled())return saved;
-    let profile:DeviceProfile={...DEFAULT_PROFILE,allowGpu,model:modelKey};
+    if(saved && saved.allowGpu===allowGpu && saved.model===modelKey && saved.calibrationVersion===CALIBRATION_VERSION && !remeasure
+      && await this.model(saved.weights).isReady())return saved;
+    let profile:DeviceProfile={...DEFAULT_PROFILE,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION};
     if(allowGpu && this.runtimeStore.gpu && this.runtimeStore.supported) {
       await this.model("fp32").ensure(message=>update(`Testing this computer's graphics: ${message}`));
       update("Comparing the GPU and CPU on this computer…");
       // Stop this vault's engine first so its indexing does not compete with the measurement.
       this.embedding.restart();
-      const calibration=await this.embedding.calibrate();
-      profile={version:1,...chooseDevice(calibration,allowGpu),allowGpu,model:modelKey,calibration,measuredAt:new Date().toISOString()};
+      const calibration=await this.embedding.calibrate(),choice=chooseDevice(calibration,allowGpu);
+      let gpuBatch:DeviceProfile["gpuBatch"];
+      if(choice.device==="directml") {
+        update("Choosing how many sections the GPU embeds at once…");
+        // The GPU already passed; if this extra measurement fails, small batches are the safe choice.
+        calibration.batch=await this.embedding.calibrateBatch().catch(()=>undefined);
+        gpuBatch=calibration.batch ? chooseGpuBatch(calibration.batch) : "standard";
+      }
+      profile={version:1,...choice,gpuBatch,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION,calibration,measuredAt:new Date().toISOString()};
     }
     if(profile.weights!=="fp32" && this.runtimeStore.gpu)await this.model("fp32").removeWeights();
     await this.profiles.write(profile);
@@ -112,7 +122,8 @@ export default class HeadingSearchPlugin extends Plugin {
   describeProfile(profile=this.profile):string {
     const c=profile.calibration;
     const timing=c ? ` Measured on 12 sample sections: CPU ${c.cpuMs.toFixed(0)} ms, GPU ${c.gpuMs===null ? `unavailable${c.gpuError ? ` (${c.gpuError})` : ""}` : `${c.gpuMs.toFixed(0)} ms`}.` : "";
-    return `${profile.device==="directml" ? "Using the GPU (DirectML) with full-precision weights." : "Using the CPU with 8-bit weights."}${timing}`;
+    const batch=c?.batch ? ` On 64 sections: small batches ${c.batch.standardMs.toFixed(0)} ms, large batches ${c.batch.largeMs===null ? "unavailable" : `${c.batch.largeMs.toFixed(0)} ms`}.` : "";
+    return `${profile.device==="directml" ? `Using the GPU (DirectML) with full-precision weights${profile.gpuBatch==="large" ? " in large batches" : ""}.` : "Using the CPU with 8-bit weights."}${timing}${batch}`;
   }
   async setupSemantic(progress:(message:string)=>void):Promise<void> {
     if(this.settingUp)return;

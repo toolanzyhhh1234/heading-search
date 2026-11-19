@@ -2,3 +2,4 @@ numpy==1.26.4
 onnxruntime==1.20.1
 requests==2.32.5
 tokenizers==0.22.1
+onnx==1.18.0

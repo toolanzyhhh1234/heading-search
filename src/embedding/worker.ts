@@ -1,4 +1,4 @@
-import { calibrate, openNative } from "./backends";
+import { calibrate, calibrateGpuBatch, openNative } from "./backends";
 import type { Embedder } from "./engine";
 
 let engine: Embedder | undefined;
@@ -19,6 +19,8 @@ self.onmessage = (event: MessageEvent) => {
         self.postMessage({ id });
       } else if (type === "calibrate") {
         self.postMessage({ id, calibration: await calibrate(payload) });
+      } else if (type === "calibrate-batch") {
+        self.postMessage({ id, calibration: await calibrateGpuBatch(payload) });
       } else if (type === "embed") {
         if (!engine) throw new Error("The embedding model is not ready.");
         const vectors = (await engine.embed(payload.texts, payload.query)).map(vector => vector.buffer as ArrayBuffer);

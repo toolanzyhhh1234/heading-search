@@ -1,5 +1,5 @@
 // Full-corpus encoding with the shipping native engine (batched, DirectML or multi-threaded CPU).
-// Usage: node scripts/embed-benchmarks-native.mjs --weights int8|fp32 --runtime <dir containing node_modules/onnxruntime-node> [--device directml|native-cpu] [--model <spec.json>]
+// Usage: node scripts/embed-benchmarks-native.mjs --weights int8|fp32 --runtime <dir containing node_modules/onnxruntime-node> [--device directml|native-cpu] [--model <spec.json>] [--gpu-batch standard|large]
 // --model defaults to the shipped src/model-spec.json; candidate specs live in benchmarks/models/ (see scripts/pin-model.mjs).
 // The device defaults to the one the plugin pairs with the weights: DirectML for fp32, CPU for int8.
 import { build } from 'esbuild';
@@ -18,7 +18,7 @@ const profile=`${spec.key??'native'}-${weights}`;
 const variant=spec.weights[weights];
 if(!variant)throw new Error(`Unknown weights ${weights}; expected one of ${Object.keys(spec.weights).join(', ')}`);
 const directory=resolve('.cache/models',spec.id,spec.revision);
-for(const file of [...spec.files,variant,...(variant.extra??[])]) {
+for(const file of [...spec.files,variant,...(variant.extra??[]),...(variant.gpu?[variant.gpu]:[])]) {
   const bytes=await readFile(resolve(directory,file.path));
   if(bytes.length!==file.bytes || createHash('sha256').update(bytes).digest('hex')!==file.sha256)throw new Error(`Benchmark asset does not match its pinned hash: ${file.path}`);
 }
@@ -28,6 +28,7 @@ globalThis.require=createRequire(import.meta.url);
 const { openNative }=globalThis.require(resolve('dist/bench/backends.cjs'));
 const threads=Math.max(1,Math.min(4,Math.floor(cpus().length/2)));
 const {engine,info}=await openNative({runtimeDirectory:runtime.replaceAll('\\','/'),modelPath:resolve(directory,variant.path),
+  gpuModelPath:variant.gpu?resolve(directory,variant.gpu.path):undefined,gpuBatch:arg('gpu-batch')??'standard',
   tokenizer:JSON.parse(await readFile(resolve(directory,'tokenizer.json'),'utf8')),config:JSON.parse(await readFile(resolve(directory,'tokenizer_config.json'),'utf8')),
   threads,device:arg('device')??(weights==='fp32'?'directml':'native-cpu'),
   model:{dimensions:spec.dimensions,maxTokens:spec.maxTokens,pooling:spec.pooling,queryPrefix:spec.queryPrefix,documentPrefix:spec.documentPrefix??''}});

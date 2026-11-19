@@ -1,0 +1,44 @@
+{
+  "createdAt": "2026-11-19",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 3070 (8 GB), driver 616.92",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12600KF, 16 logical CPUs",
+    "platform": "win32-x64"
+  },
+  "runtime": "onnxruntime-node 1.22.0",
+  "engines": {
+    "gpuGraph": "engines-3070-gpu-graph.json",
+    "upstreamGraph": "engines-3070-upstream-graph.json"
+  },
+  "throttling": "Both engine runs were made back to back while Windows throttled the unfocused session (the terminal ran in the background during a remote session). The CPU measured 48 ms/document (int8) unthrottled earlier the same day and 314-353 ms here; DirectML on the upstream graph measured 40 ms/document unthrottled. The upstream graph suffers most from throttling because its Gelu nodes run on the throttled CPU, which defeated the point of using the GPU while Obsidian is in the background. Compare rows within this run; foreground timings of the bundled graph are still to be measured.",
+  "gelu": {
+    "finding": "DirectML has no kernel for the ONNX opset-20 Gelu op (onnxruntime-node 1.22.0 and 1.31.1). All 12 per-layer Gelu nodes ran on the CPU, each with a GPU-to-CPU copy of the largest activation and back.",
+    "fix": "scripts/patch-gpu-graph.py rewrites each Gelu as 0.5 * x * (1 + erf(x * (1/sqrt 2))). The Div(x, sqrt 2) spelling is fused back into Gelu by onnxruntime's GeluFusion, also for DirectML, so the multiplication form is required.",
+    "agreement": "Cosine 1.000000 against the upstream graph's DirectML vectors (first 16 SciFact documents) and against the CPU (scripts/runtime-smoke.mjs --weights fp32)."
+  },
+  "calibration": {
+    "note": "Setup's calibration through the plugin's worker on this computer, same throttled session.",
+    "cpuMs": 357.9,
+    "gpuMs": 111.0,
+    "batch": {"standardMs": 1196.0, "largeMs": 636.5},
+    "chosen": {"device": "directml", "gpuBatch": "large"}
+  },
+  "cuda": {
+    "note": "Reference only: onnxruntime-gpu 1.22.0 (Python) CUDA execution provider on the same ONNX graphs and batching (sorted, fixed-shape buckets), tokenization excluded, measured in the same throttled session as the DirectML rows. onnxruntime-node has no CUDA build for Windows.",
+    "rows": [
+      {"model": "granite-embedding-small-english-r2 (shipped)", "directmlUpstream": [161.5, 63.6], "directmlGpuGraph": [23.6, 11.3], "cuda": [8.9, 8.0]},
+      {"model": "granite-embedding-english-r2 (149M)", "directmlUpstream": [256.5, 94.7], "directmlGpuGraph": [49.1, 26.9], "cuda": [28.7, 25.3]}
+    ],
+    "columns": "ms/document as [standard batches, large batches] on 128 evenly spaced SciFact/NFCorpus documents"
+  },
+  "largerModel": {
+    "model": "granite-embedding-english-r2 (149M, 768 dimensions)",
+    "note": "Re-embedded on this GPU; scores reproduce the committed fp32 summaries to four decimals. Paired bootstrap 95% CIs (10,000 resamples, seed 42) of per-query nDCG@10 against the shipped model, int8 vector storage.",
+    "vsShipped": {
+      "scifact/int8": {"gain": 0.0083, "ci95": [-0.0082, 0.0246]},
+      "scifact/hybrid-int8": {"gain": 0.0100, "ci95": [-0.0024, 0.0223]},
+      "nfcorpus/int8": {"gain": 0.0091, "ci95": [-0.0035, 0.0213]},
+      "nfcorpus/hybrid-int8": {"gain": 0.0028, "ci95": [-0.0051, 0.0104]}
+    }
+  }
+}

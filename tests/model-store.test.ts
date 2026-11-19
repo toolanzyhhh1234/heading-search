@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { resolve, sep } from "node:path";
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
-import { ModelStore, type ModelDefinition } from "../src/embedding/model-store";
+import { ModelStore, modelDefinition, weightsBytes, type ModelDefinition } from "../src/embedding/model-store";
 
 const data=new TextEncoder().encode("test model asset");
 const definition:ModelDefinition={id:"test/model",revision:"pinned",files:[{path:"onnx/model.onnx",bytes:data.length,sha256:createHash("sha256").update(data).digest("hex")}]};
@@ -53,4 +53,47 @@ test("transient Windows file handles retry promotion without downloading again",
     const store=new ModelStore(async()=>{downloads++;return Uint8Array.from(data).buffer;},root,definition);
     await store.ensure();assert.equal(downloads,1);assert.equal(await store.isInstalled(),true);
   } finally {await cleanup(root);}
+});
+
+const bundledData=new TextEncoder().encode("bundled GPU graph");
+const withBundled:ModelDefinition={...definition,files:[...definition.files,
+  {path:"onnx/model.gpu.onnx",bytes:bundledData.length,sha256:createHash("sha256").update(bundledData).digest("hex"),bundled:bundledData}],
+  model:"onnx/model.onnx",gpuModel:"onnx/model.gpu.onnx"};
+test("bundled files install without a download, and an update adds them offline beside existing weights",async()=>{
+  const root=await temporaryRoot();
+  try {
+    const urls:string[]=[];
+    const store=new ModelStore(async url=>{urls.push(url);return Uint8Array.from(data).buffer;},root,withBundled);
+    await store.ensure();
+    assert.deepEqual(urls,["https://huggingface.co/test/model/resolve/pinned/onnx/model.onnx"]);
+    assert.deepEqual(await readFile(store.gpuModelPath),Buffer.from(bundledData));
+    // An installation from before the GPU graph existed: the weights are there, the bundled graph is not.
+    await rm(store.gpuModelPath);
+    const updated=new ModelStore(async()=>{throw new Error("No network");},root,withBundled);
+    assert.equal(await updated.isInstalled(),false);
+    assert.equal(await updated.isReady(),true);
+    assert.equal(await updated.isInstalled(),true);
+    assert.deepEqual(await readFile(updated.gpuModelPath),Buffer.from(bundledData));
+    await updated.removeWeights();
+    for(const path of [updated.modelPath,updated.gpuModelPath])await assert.rejects(readFile(path));
+  } finally {await cleanup(root);}
+});
+test("offline readiness never downloads and leaves no trace when setup never ran",async()=>{
+  const root=await temporaryRoot();
+  try {
+    let requests=0;
+    const store=new ModelStore(async()=>{requests++;return Uint8Array.from(data).buffer;},root,withBundled);
+    assert.equal(await store.isReady(),false);
+    await assert.rejects(store.read(),/Check \/ repair/);
+    assert.equal(requests,0);
+    await assert.rejects(fs.stat(store.directory));
+  } finally {await cleanup(root);}
+});
+test("the shipped GPU graph is bundled with its pinned hash, and the CPU keeps the upstream graph",()=>{
+  const fp32=modelDefinition("fp32"),gpu=fp32.files.find(file=>file.path===fp32.gpuModel);
+  assert.ok(gpu?.bundled && fp32.gpuModel!==fp32.model);
+  assert.equal(gpu.bundled.length,gpu.bytes);
+  assert.equal(createHash("sha256").update(gpu.bundled).digest("hex"),gpu.sha256);
+  assert.equal(weightsBytes("fp32"),fp32.files.reduce((sum,file)=>sum+file.bytes,0)-gpu.bytes);
+  assert.equal(modelDefinition("int8").gpuModel,undefined);
 });

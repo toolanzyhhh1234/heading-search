@@ -66,7 +66,31 @@ The binary sizes include per-vector scale/norm values and one 16-byte header. Te
 
 The same sample with bge-small-en-v1.5, the previous model, measured back to back: CPU int8 77.1 ms/document (this model takes 1.29x as long); DirectML fp32 83.9 ms/document (this model takes 1.68x as long).
 
-Setup times the CPU (int8) against DirectML (fp32) once per computer on twelve sample sections of typical lengths and keeps the GPU unless it measures more than twice as slow. Windows runs a background Obsidian window at idle CPU priority, which slows CPU embedding about 3x (358 → 1040 ms on the calibration sample) while DirectML barely changes (590 → 620 ms); the factor of two assumes half of bulk indexing happens in the background. On this Iris Xe laptop the CPU is faster in the foreground, but the GPU is chosen. DirectML runs single short inputs slowly, so in GPU mode queries run on the CPU with the same fp32 weights.
+Setup times the CPU (int8) against DirectML (fp32) once per computer on twelve sample sections of typical lengths and keeps the GPU unless it measures more than twice as slow. Windows runs a background Obsidian window at idle CPU priority, which slows CPU embedding about 3x (358 → 1040 ms on the calibration sample) while DirectML barely changes (590 → 620 ms); the factor of two assumes half of bulk indexing happens in the background. On this Iris Xe laptop the CPU is faster in the foreground, but the GPU is chosen. DirectML runs single short inputs slowly, so in GPU mode queries run on the CPU with the same fp32 weights. These Iris Xe timings predate the DirectML GPU graph (next section) and have not been measured again.
+
+## DirectML on a discrete GPU
+
+Hardware: NVIDIA GeForce RTX 3070 (8 GB), driver 616.92; 12th Gen Intel(R) Core(TM) i5-12600KF, 16 logical CPUs. Runtime: onnxruntime-node 1.22.0. DirectML has no kernel for the ONNX opset-20 Gelu op (onnxruntime-node 1.22.0 and 1.31.1). All 12 per-layer Gelu nodes ran on the CPU, each with a GPU-to-CPU copy of the largest activation and back. The DirectML graph bundled with the plugin fixes this: scripts/patch-gpu-graph.py rewrites each Gelu as 0.5 * x * (1 + erf(x * (1/sqrt 2))). The Div(x, sqrt 2) spelling is fused back into Gelu by onnxruntime's GeluFusion, also for DirectML, so the multiplication form is required. Cosine 1.000000 against the upstream graph's DirectML vectors (first 16 SciFact documents) and against the CPU (scripts/runtime-smoke.mjs --weights fp32). The CPU keeps the upstream graph, and both load the same downloaded weights.
+
+Setup also chooses DirectML's batch size once the GPU wins: 16 sections per call in batches of up to 8 (tuned on Iris Xe), or 64 per call in batches of up to 64. Large batches must measure at least 1.2x faster on 64 probe sections skewed towards short ones, as vaults are. Twelve evenly spread lengths, as in the CPU/GPU comparison, favour small batches because a single large batch pads them all to 510 tokens. Closing batches early to limit padding was slower at every threshold tried: on this GPU the cost is per call.
+
+| DirectML graph | Small batches (ms/document) | Large batches (ms/document) |
+| --- | ---: | ---: |
+| Upstream (Gelu on the CPU) | 266.9 | 104.5 |
+| Bundled GPU graph | 30.5 | 14.7 |
+
+Measured with `node scripts/benchmark-engines.mjs` on the sample above. Both engine runs were made back to back while Windows throttled the unfocused session (the terminal ran in the background during a remote session). The CPU measured 48 ms/document (int8) unthrottled earlier the same day and 314-353 ms here; DirectML on the upstream graph measured 40 ms/document unthrottled. The upstream graph suffers most from throttling because its Gelu nodes run on the throttled CPU, which defeated the point of using the GPU while Obsidian is in the background. Compare rows within this run; foreground timings of the bundled graph are still to be measured. Setup's calibration in the same session: CPU 358 ms against GPU 111 ms, then small batches 1196 ms against large 637 ms, choosing the GPU with large batches.
+
+**CUDA.** Reference only: onnxruntime-gpu 1.22.0 (Python) CUDA execution provider on the same ONNX graphs and batching (sorted, fixed-shape buckets), tokenization excluded, measured in the same throttled session as the DirectML rows. onnxruntime-node has no CUDA build for Windows. With the bundled graph and large batches, DirectML comes within 1.1–1.4x of CUDA, so the plugin does not ship a CUDA engine (a separate ONNX Runtime build plus over 1 GB of NVIDIA libraries).
+
+| Model | DirectML, upstream graph | DirectML, GPU graph | CUDA |
+| --- | ---: | ---: | ---: |
+| granite-embedding-small-english-r2 (shipped) | 161.5 / 63.6 | 23.6 / 11.3 | 8.9 / 8.0 |
+| granite-embedding-english-r2 (149M) | 256.5 / 94.7 | 49.1 / 26.9 | 28.7 / 25.3 |
+
+Cells are ms/document with small / large batches.
+
+**A larger model for strong GPUs.** granite-embedding-english-r2 (149M, 768 dimensions): Re-embedded on this GPU; scores reproduce the committed fp32 summaries to four decimals. Paired bootstrap 95% CIs (10,000 resamples, seed 42) of per-query nDCG@10 against the shipped model, int8 vector storage. SciFact dense +0.0083 [-0.008, +0.025], hybrid +0.0100 [-0.002, +0.022]; NFCorpus dense +0.0091 [-0.004, +0.021], hybrid +0.0028 [-0.005, +0.010]. Every interval includes zero, while the model downloads 605 MB instead of 195 MB, stores vectors twice as large, has no int8 weights for the CPU, and indexes about 2.4x slower even with the GPU graph. No larger-model tier is offered.
 
 ## WebAssembly engine latency (removed)
 

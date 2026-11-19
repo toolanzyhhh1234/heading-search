@@ -42,6 +42,12 @@ for(const entry of entries) {
   if(entry.sha256 && entry.sha256!==sha256)throw new Error(`${entry.path} changed upstream; review before re-pinning`);
   Object.assign(entry,{sha256,bytes:data.length});
 }
+// A variant's GPU graph is generated here, not downloaded (scripts/patch-gpu-graph.py): install the bundled copy beside its weights.
+for(const gpu of Object.values(spec.weights).map(weights=>weights.gpu).filter(Boolean)) {
+  const data=await readFile(gpu.bundled);
+  if(data.length!==gpu.bytes || createHash('sha256').update(data).digest('hex')!==gpu.sha256)throw new Error(`${gpu.bundled} does not match its pinned hash; run python scripts/patch-gpu-graph.py`);
+  await mkdir(dirname(resolve(directory,gpu.path)),{recursive:true});await writeFile(resolve(directory,gpu.path),data);
+}
 await writeFile(file,JSON.stringify(spec,null,2)+'\n');
 const total=entries.reduce((sum,entry)=>sum+entry.bytes,0);
 console.log(`Pinned ${spec.id}@${spec.revision.slice(0,10)}: ${entries.length} files, ${(total/1e6).toFixed(0)} MB in ${directory}`);

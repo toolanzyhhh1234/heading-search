@@ -33,7 +33,13 @@
         }
       ],
       "sha256": "cddb145cd1147ec24a3908b2ca2602b98b20a3d198365cff270b7cb26c98179e",
-      "bytes": 182504
+      "bytes": 182504,
+      "gpu": {
+        "path": "onnx/model.gpu.onnx",
+        "bundled": "src/assets/granite-small-r2.gpu.onnx",
+        "sha256": "280784663e4e0a2f123417857493e7a36994935f7aeae795a69fe1d76d7ddc20",
+        "bytes": 189837
+      }
     },
     "int8": {
       "path": "onnx/model_quantized.onnx",

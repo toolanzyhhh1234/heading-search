@@ -15,6 +15,8 @@ The full document corpus is searched for every official test query. These are no
 npm ci
 python -m pip install -r benchmarks/requirements.txt
 python scripts/prepare-benchmarks.py
+node scripts/pin-model.mjs src/model-spec.json   # pinned model files, plus the bundled DirectML graph
+python scripts/patch-gpu-graph.py                # optional: regenerates that graph and checks it is byte-identical
 # With the fast engine installed (see the main README); <dir> holds node_modules/onnxruntime-node:
 node scripts/embed-benchmarks-native.mjs --weights int8 --runtime <dir>
 node scripts/benchmark.mjs   # summary.json: the shipped model with int8 weights
@@ -24,7 +26,7 @@ node scripts/benchmark-engines.mjs --runtime <dir>
 node scripts/report-benchmark.mjs
 ```
 
-The preparation script downloads only public benchmark data and a pinned model into this workspace. To change the pinned model revision deliberately, rerun preparation after reviewing the new revision. The plugin never performs this update automatically. Generated embeddings are keyed by a hash of model revision, query/document role, and exact input text. Delete `benchmarks/cache` to measure cold encoding again.
+The preparation script downloads only public benchmark data, and `pin-model.mjs` the pinned model files, into this workspace. To change the pinned model revision deliberately, edit the spec's revision, rerun `pin-model.mjs` after reviewing the new revision, and regenerate the DirectML graph with `python scripts/patch-gpu-graph.py --write`. The plugin never performs this update automatically. Generated embeddings are keyed by a hash of model revision, query/document role, and exact input text. Delete `benchmarks/cache` to measure cold encoding again.
 
 ## Method
 
@@ -33,7 +35,8 @@ The preparation script downloads only public benchmark data and a pinned model i
 - Embedding: the pinned `onnx-community/granite-embedding-small-english-r2-ONNX` graph (int8 weights for `summary.json`), CLS pooling, L2 normalization, 384 dimensions, 512-token truncation retaining the closing SEP token, and no query instruction. Documents use title plus text.
 - bge-small-en-v1.5, the previous model, stays as the comparison baseline (`benchmarks/models/bge-small.json`, cache key `native`). Its int8 scores in `summary-bge-small-int8.json` were produced by the WebAssembly engine earlier versions shipped, for **every** document and query (cache profile `wasm`; that engine has since been removed, and its int8 vectors match the native engine's at cosine 0.999999). Four independent one-thread workers accelerate benchmark preparation. Separately measured WASM latency uses one worker on 12 evenly spaced documents and 32 queries per dataset.
 - fp32 weight scores (`summary-granite-small-r2-fp32.json`; bge-small's fp32 and fp16 in `summary-native-fp32.json` and `summary-native-fp16.json`) come from the plugin's native engine, running the same bundled code the plugin uses, with the commands above. They embed exactly the same inputs as the int8 caches. The earlier native int8 reference run failed a strict 0.999 agreement check. The cause is that int8 weights quantize activations dynamically across the whole batch tensor, so batched int8 vectors depend on their neighbours. The plugin therefore runs int8 one text at a time, where native and WASM vectors agree (cosine 0.999999). fp32 vectors agree between DirectML and the native CPU (cosine 1.0), which lets the plugin embed documents on the GPU and queries on the CPU. `node scripts/runtime-smoke.mjs --runtime <dir> --weights fp32` checks both properties.
-- Engine speed (`engines.json`) is measured with `node scripts/benchmark-engines.mjs --runtime <dir>` on 128 evenly spaced documents, sent 16 at a time as the plugin indexes, plus 32 single queries.
+- DirectML runs the plugin's bundled GPU graph (`src/assets/`, made by `scripts/patch-gpu-graph.py`): the upstream graph with each ONNX `Gelu`, which DirectML runs on the CPU, rewritten as the equivalent `Erf` expression. It loads the same weights file and gives the same vectors (cosine 1.000000); the CPU runs the upstream graph. See [DirectML on a discrete GPU](RESULTS.md#directml-on-a-discrete-gpu).
+- Engine speed (`engines.json`) is measured with `node scripts/benchmark-engines.mjs --runtime <dir>` on 128 evenly spaced documents, sent in the engine's batch size as the plugin indexes (16, or 64 with large GPU batches) after one warm-up pass, plus 32 single queries.
 - A Node worker harness loads the unchanged browser worker for repeatability. Timings do not include Obsidian's interface rendering or other application overhead.
 - Exact search: no approximate nearest-neighbor index or candidate filtering. The same corpus is used for BM25, dense search, and compression comparisons.
 - Hybrid: RRF of title-weighted BM25 and int8 dense search, with `k=60`, top 100 candidates from each method. No cross-encoder reranker.

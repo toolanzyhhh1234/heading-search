@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
-import { chooseDevice, DeviceProfileStore, DEFAULT_PROFILE } from "../src/embedding/device-profile";
+import { CALIBRATION_VERSION, chooseDevice, chooseGpuBatch, DeviceProfileStore, DEFAULT_PROFILE } from "../src/embedding/device-profile";
 
 const testRoot=resolve(".cache/tests");
 async function temporaryRoot():Promise<string> {await mkdir(testRoot,{recursive:true});return mkdtemp(join(testRoot,"device-"));}
@@ -25,6 +25,24 @@ test("the device profile is shared on disk and invalid files fall back safely",a
     await store.write(profile);
     assert.deepEqual(await new DeviceProfileStore(root).read(),profile);
     await writeFile(store.path,JSON.stringify({version:1,device:"cuda",weights:"fp32",allowGpu:true}));
+    assert.equal(await store.read(),null);
+  } finally {assert.ok(resolve(root).startsWith(testRoot+sep));await rm(root,{recursive:true,force:true});}
+});
+
+test("large GPU batches are chosen only when clearly faster, and never after failing",()=>{
+  assert.equal(chooseGpuBatch({standardMs:1024,largeMs:772}),"large"); // RTX 3070 on the batch probe
+  assert.equal(chooseGpuBatch({standardMs:1000,largeMs:900}),"standard");
+  assert.equal(chooseGpuBatch({standardMs:1000,largeMs:null}),"standard");
+});
+
+test("a saved batch tier round-trips and an unknown one invalidates the profile",async()=>{
+  const root=await temporaryRoot();
+  try {
+    const store=new DeviceProfileStore(root);
+    const profile={...DEFAULT_PROFILE,device:"directml" as const,weights:"fp32" as const,gpuBatch:"large" as const,calibrationVersion:CALIBRATION_VERSION};
+    await store.write(profile);
+    assert.deepEqual(await store.read(),profile);
+    await writeFile(store.path,JSON.stringify({...profile,gpuBatch:"huge"}));
     assert.equal(await store.read(),null);
   } finally {assert.ok(resolve(root).startsWith(testRoot+sep));await rm(root,{recursive:true,force:true});}
 });

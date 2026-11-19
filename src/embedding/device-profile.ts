@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
-import type { NativeDevice, Calibration } from "./backends";
+import type { NativeDevice, Calibration, GpuBatch } from "./backends";
 import type { ModelWeights } from "./model-store";
 import { ensureDirectory, promote } from "./shared-cache";
 import { sharedRuntimeRoot } from "./runtime-store";
@@ -17,10 +17,27 @@ export interface DeviceProfile {
   allowGpu:boolean;
   /** The model the measurement was made with (id@revision). A different model is timed again at setup. */
   model?:string;
+  /** DirectML's batch tier. Profiles from earlier versions have none and use "standard". */
+  gpuBatch?:GpuBatch;
+  /** The calibration method the choice was made with (CALIBRATION_VERSION). An older one is timed again at setup. */
+  calibrationVersion?:number;
   measuredAt?:string;
   calibration?:Calibration;
 }
 export const DEFAULT_PROFILE:DeviceProfile={version:1,device:"native-cpu",weights:"int8",allowGpu:true};
+/**
+ * 2: DirectML runs the bundled GPU graph, several times faster than before (its Gelu used to run on the CPU), and
+ * the batch tier is measured. Computers that chose the CPU against the old GPU graph deserve a new comparison.
+ */
+export const CALIBRATION_VERSION=2;
+/**
+ * How much faster large batches must measure to be chosen. Noise must not pick them, and an interactive search can
+ * wait behind one batch of indexing, which large batches make longer (64 sections instead of 16).
+ */
+export const LARGE_BATCH_GAIN=1.2;
+export function chooseGpuBatch(batch:NonNullable<Calibration["batch"]>):GpuBatch {
+  return batch.largeMs!==null && batch.largeMs*LARGE_BATCH_GAIN<=batch.standardMs ? "large" : "standard";
+}
 /**
  * How much slower than the CPU the GPU may measure and still be chosen. Setup measures with Obsidian in the
  * foreground, but Windows runs a background Obsidian window at idle CPU priority: CPU embedding then slows about 3x
@@ -40,7 +57,8 @@ export class DeviceProfileStore {
   async read():Promise<DeviceProfile|null> {
     try {
       const value=JSON.parse(await fs.readFile(this.path,"utf8")) as DeviceProfile;
-      const valid=value.version===1 && ["directml","native-cpu"].includes(value.device) && ["int8","fp32"].includes(value.weights) && typeof value.allowGpu==="boolean";
+      const valid=value.version===1 && ["directml","native-cpu"].includes(value.device) && ["int8","fp32"].includes(value.weights) && typeof value.allowGpu==="boolean"
+        && (value.gpuBatch===undefined || ["standard","large"].includes(value.gpuBatch));
       return valid ? value : null;
     } catch {return null;}
   }
