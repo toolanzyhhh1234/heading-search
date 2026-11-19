@@ -1,6 +1,6 @@
 # Retrieval benchmark
 
-This suite compares BM25, BGE-small CPU embeddings, 8-bit/4-bit vector compression, and reciprocal-rank fusion on two public [BEIR](https://github.com/beir-cellar/beir) collections:
+This suite compares BM25, the shipped Granite small embeddings (plus candidate models and rerankers), 8-bit/4-bit vector compression, and reciprocal-rank fusion on two public [BEIR](https://github.com/beir-cellar/beir) collections:
 
 | Dataset | Full corpus | Test queries |
 | --- | ---: | ---: |
@@ -15,8 +15,12 @@ The full document corpus is searched for every official test query. These are no
 npm ci
 python -m pip install -r benchmarks/requirements.txt
 python scripts/prepare-benchmarks.py
-node scripts/embed-benchmarks-wasm.mjs
-npm run benchmark
+# With the fast engine installed (see the main README); <dir> holds node_modules/onnxruntime-node:
+node scripts/embed-benchmarks-native.mjs --weights int8 --runtime <dir>
+node scripts/benchmark.mjs   # summary.json: the shipped model with int8 weights
+node scripts/embed-benchmarks-native.mjs --weights fp32 --runtime <dir>
+node scripts/benchmark.mjs --embeddings granite-small-r2-fp32 --out summary-granite-small-r2-fp32.json
+node scripts/benchmark-engines.mjs --runtime <dir>
 node scripts/report-benchmark.mjs
 ```
 
@@ -26,19 +30,21 @@ The preparation script downloads only public benchmark data and a pinned model i
 
 - BM25: fixed Unicode word analyzer, English stopword removal, Porter stemming, `k1=1.2`, `b=0.75`; title and body have equal weight for the canonical baseline. This is this repository's reproducible BM25 implementation, not a claim to have reproduced a specific Elasticsearch leaderboard score.
 - Title-weighted BM25: the same index with the plugin's existing 2x title weight. No Markdown headings are invented for these datasets. This gives the shipping lexical ranking a separate comparison alongside the canonical baseline.
-- Embedding: the pinned quantized `Xenova/bge-small-en-v1.5` ONNX graph, CLS pooling, L2 normalization, 384 dimensions, 512-token truncation retaining the closing SEP token, and BGE's recommended query instruction. Documents use title plus text.
-- Final quality scores use the exact shipping SIMD WASM engine for **every** document and query. Four independent one-thread workers accelerate benchmark preparation. Separately measured plugin latency uses one worker on 12 evenly spaced documents and 32 queries per dataset. The earlier native ONNX reference run failed a strict 0.999 minimum-cosine agreement check, so those native embeddings are not used for the final quality scores. The native scripts remain as reproducible diagnostics.
+- Embedding: the pinned `onnx-community/granite-embedding-small-english-r2-ONNX` graph (int8 weights for `summary.json`), CLS pooling, L2 normalization, 384 dimensions, 512-token truncation retaining the closing SEP token, and no query instruction. Documents use title plus text.
+- bge-small-en-v1.5, the previous model, stays as the comparison baseline (`benchmarks/models/bge-small.json`, cache key `native`). Its int8 scores in `summary-bge-small-int8.json` were produced by the WebAssembly engine earlier versions shipped, for **every** document and query (cache profile `wasm`; that engine has since been removed, and its int8 vectors match the native engine's at cosine 0.999999). Four independent one-thread workers accelerate benchmark preparation. Separately measured WASM latency uses one worker on 12 evenly spaced documents and 32 queries per dataset.
+- fp32 weight scores (`summary-granite-small-r2-fp32.json`; bge-small's fp32 and fp16 in `summary-native-fp32.json` and `summary-native-fp16.json`) come from the plugin's native engine, running the same bundled code the plugin uses, with the commands above. They embed exactly the same inputs as the int8 caches. The earlier native int8 reference run failed a strict 0.999 agreement check. The cause is that int8 weights quantize activations dynamically across the whole batch tensor, so batched int8 vectors depend on their neighbours. The plugin therefore runs int8 one text at a time, where native and WASM vectors agree (cosine 0.999999). fp32 vectors agree between DirectML and the native CPU (cosine 1.0), which lets the plugin embed documents on the GPU and queries on the CPU. `node scripts/runtime-smoke.mjs --runtime <dir> --weights fp32` checks both properties.
+- Engine speed (`engines.json`) is measured with `node scripts/benchmark-engines.mjs --runtime <dir>` on 128 evenly spaced documents, sent 16 at a time as the plugin indexes, plus 32 single queries.
 - A Node worker harness loads the unchanged browser worker for repeatability. Timings do not include Obsidian's interface rendering or other application overhead.
 - Exact search: no approximate nearest-neighbor index or candidate filtering. The same corpus is used for BM25, dense search, and compression comparisons.
 - Hybrid: RRF of title-weighted BM25 and int8 dense search, with `k=60`, top 100 candidates from each method. No cross-encoder reranker.
-- Metrics: graded nDCG@10 with linear relevance gains, matching BEIR/trec_eval `ndcg_cut`; Recall@10 and MRR@10. Unjudged documents are non-relevant and identical query/document IDs are excluded. Fixed-seed paired bootstrap confidence intervals compare per-query nDCG with BM25. Search timings exclude query encoding; WASM query encoding latency is reported separately. One startup model load is separate again. The [trec_eval implementation](https://github.com/usnistgov/trec_eval/blob/master/m_ndcg_cut.c) defines the gain convention.
+- Metrics: graded nDCG@10 with linear relevance gains, matching BEIR/trec_eval `ndcg_cut`; Recall@10 and MRR@10. Unjudged documents are non-relevant and identical query/document IDs are excluded. Fixed-seed paired bootstrap confidence intervals compare per-query nDCG with BM25. Search timings exclude query encoding; query encoding latency is in `engines.json`. One startup model load is separate again. The [trec_eval implementation](https://github.com/usnistgov/trec_eval/blob/master/m_ndcg_cut.c) defines the gain convention.
 - Compression: compare actual binary byte length (including headers/scales), nDCG changes, and top-10 overlap with float32. Note and heading text metadata is not included in vector-only savings.
 
 The policy is fixed before inspecting results: dense vectors must first beat **both** BM25 baselines with at least **0.01 absolute macro nDCG@10 improvement over the stronger baseline**, **no dataset regression**, and **positive lower paired-bootstrap bounds on each dataset**. A hybrid default must independently clear the same gate. Otherwise keep heading-aware BM25. Prefer smaller vector storage only with no more than **0.005 nDCG loss on either dataset**, **at least 95% top-10 overlap** with float32, and **no more than 1.5x int8 scan p95 latency**.
 
 ## Limits
 
-SciFact and NFCorpus are English scientific/medical retrieval tasks, not an Obsidian usage study. Canonical scores retrieve whole documents and do not invent headings for these datasets. They test model choice and compression; unit/integration tests separately verify real Markdown section boundaries, heading weights, source links, edits, moves, deletions, and vault isolation. Do not treat these two tasks as proof that a model wins on all personal vaults or languages. BGE is a pretrained model; this is not a claim of decontaminated training data.
+SciFact and NFCorpus are English scientific/medical retrieval tasks, not an Obsidian usage study. Canonical scores retrieve whole documents and do not invent headings for these datasets. They test model choice and compression; unit/integration tests separately verify real Markdown section boundaries, heading weights, source links, edits, moves, deletions, and vault isolation. Do not treat these two tasks as proof that a model wins on all personal vaults or languages. Granite, like BGE before it, is a pretrained model; this is not a claim of decontaminated training data. IBM describes its training data only as permissively licensed public and IBM-generated pairs.
 
 The rotated scalar experiment is inspired by TurboQuant but is not the paper's full algorithm. It uses a fixed randomized Hadamard transform padded to 512 dimensions, a fixed 16-value Gaussian codebook, and norm correction. It has neither learned per-corpus codebooks nor QJL residual correction. See the [TurboQuant paper](https://arxiv.org/abs/2504.19874) for the full method; published GPU/KV-cache speedups do not transfer automatically to this CPU plugin.
 

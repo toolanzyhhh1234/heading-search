@@ -1,0 +1,7 @@
+Granite Embedding Small English R2 (ibm-granite/granite-embedding-small-english-r2)
+Copyright IBM Corp.
+Licensed under the Apache License, Version 2.0: https://www.apache.org/licenses/LICENSE-2.0
+
+The plugin downloads the ONNX conversion published at
+https://huggingface.co/onnx-community/granite-embedding-small-english-r2-ONNX (pinned revision in src/model-spec.json)
+when the user sets up semantic search. The model weights are not part of the plugin release.

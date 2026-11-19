@@ -1,0 +1,171 @@
+{
+  "createdAt": "2026-11-19T08:58:50.890Z",
+  "baseline": "bge-small-en-v1.5 with fp32 weights",
+  "note": "Dense rows use int8 vector storage, as the plugin ships. Confidence intervals are paired bootstrap 95% intervals of per-query nDCG@10 differences against the baseline.",
+  "models": [
+    {
+      "key": "native",
+      "model": "BAAI/bge-small-en-v1.5",
+      "label": "bge-small-en-v1.5 (previous default)",
+      "parameters": "33M",
+      "dimensions": 384,
+      "license": "MIT (BAAI upstream model)",
+      "fp32MB": 133,
+      "int8MB": 34,
+      "encodeMsPerDocument": {
+        "scifact": 63.356933359058466,
+        "nfcorpus": 75.35761998348471
+      },
+      "scores": {
+        "scifact/int8": {
+          "ndcg10": 0.7127591146565947,
+          "vsBaselineCI95": null
+        },
+        "scifact/hybrid-int8": {
+          "ndcg10": 0.7258835280303996,
+          "vsBaselineCI95": null
+        },
+        "nfcorpus/int8": {
+          "ndcg10": 0.3429805936286657,
+          "vsBaselineCI95": null
+        },
+        "nfcorpus/hybrid-int8": {
+          "ndcg10": 0.3653272405839717,
+          "vsBaselineCI95": null
+        }
+      }
+    },
+    {
+      "key": "granite-small-r2",
+      "model": "ibm-granite/granite-embedding-small-english-r2",
+      "label": "granite-embedding-small-english-r2 (shipped)",
+      "parameters": "47M",
+      "dimensions": 384,
+      "license": "Apache-2.0",
+      "fp32MB": 195,
+      "int8MB": 52,
+      "encodeMsPerDocument": {
+        "scifact": 86.0285349990353,
+        "nfcorpus": 99.2959022570878
+      },
+      "scores": {
+        "scifact/int8": {
+          "ndcg10": 0.7462719692497852,
+          "vsBaselineCI95": [
+            0.012336298687966572,
+            0.056321479823026974
+          ]
+        },
+        "scifact/hybrid-int8": {
+          "ndcg10": 0.7451127565067204,
+          "vsBaselineCI95": [
+            0.003989966001220026,
+            0.036051882061621236
+          ]
+        },
+        "nfcorpus/int8": {
+          "ndcg10": 0.3682613639007318,
+          "vsBaselineCI95": [
+            0.00877947277005172,
+            0.04256253094704915
+          ]
+        },
+        "nfcorpus/hybrid-int8": {
+          "ndcg10": 0.3763429813065046,
+          "vsBaselineCI95": [
+            0.0007994575910738453,
+            0.02126486757519616
+          ]
+        }
+      }
+    },
+    {
+      "key": "granite-97m-multi-r2",
+      "model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+      "label": "granite-embedding-97m-multilingual-r2",
+      "parameters": "97M",
+      "dimensions": 384,
+      "license": "Apache-2.0",
+      "fp32MB": 390,
+      "int8MB": null,
+      "encodeMsPerDocument": {
+        "scifact": 69.48011203935945,
+        "nfcorpus": 76.2329412056152
+      },
+      "scores": {
+        "scifact/int8": {
+          "ndcg10": 0.6836720829289752,
+          "vsBaselineCI95": [
+            -0.05250066240459759,
+            -0.005665407079662054
+          ]
+        },
+        "scifact/hybrid-int8": {
+          "ndcg10": 0.7323658797113377,
+          "vsBaselineCI95": [
+            -0.010366449985918411,
+            0.02374685537068377
+          ]
+        },
+        "nfcorpus/int8": {
+          "ndcg10": 0.2974218233500317,
+          "vsBaselineCI95": [
+            -0.06828447665531434,
+            -0.023533832928754432
+          ]
+        },
+        "nfcorpus/hybrid-int8": {
+          "ndcg10": 0.34991566667599777,
+          "vsBaselineCI95": [
+            -0.02763501174239443,
+            -0.0037035910484486223
+          ]
+        }
+      }
+    },
+    {
+      "key": "granite-r2",
+      "model": "ibm-granite/granite-embedding-english-r2",
+      "label": "granite-embedding-english-r2",
+      "parameters": "149M",
+      "dimensions": 768,
+      "license": "Apache-2.0",
+      "fp32MB": 605,
+      "int8MB": null,
+      "encodeMsPerDocument": {
+        "scifact": 217.86386766351535,
+        "nfcorpus": 245.6280032480044
+      },
+      "scores": {
+        "scifact/int8": {
+          "ndcg10": 0.7545666931093759,
+          "vsBaselineCI95": [
+            0.019630130909703607,
+            0.06487559065595234
+          ]
+        },
+        "scifact/hybrid-int8": {
+          "ndcg10": 0.755128582913158,
+          "vsBaselineCI95": [
+            0.013559715332862614,
+            0.04516736798571413
+          ]
+        },
+        "nfcorpus/int8": {
+          "ndcg10": 0.37732609944402995,
+          "vsBaselineCI95": [
+            0.016964051575506015,
+            0.05127662537125706
+          ]
+        },
+        "nfcorpus/hybrid-int8": {
+          "ndcg10": 0.37923427531779863,
+          "vsBaselineCI95": [
+            0.0033646665676279625,
+            0.0252721466825352
+          ]
+        }
+      }
+    }
+  ]
+}

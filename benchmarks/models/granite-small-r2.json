@@ -1,0 +1,51 @@
+{
+  "key": "granite-small-r2",
+  "id": "onnx-community/granite-embedding-small-english-r2-ONNX",
+  "upstream": "ibm-granite/granite-embedding-small-english-r2",
+  "revision": "1dc7835ba0cb9c76a3618d0bf0c427c97671b3c8",
+  "license": "Apache-2.0",
+  "parameters": "47M",
+  "dimensions": 384,
+  "maxTokens": 512,
+  "pooling": "cls",
+  "queryPrefix": "",
+  "documentPrefix": "",
+  "files": [
+    {
+      "path": "tokenizer.json",
+      "sha256": "feeb83348dcb033bc6b9d2e1f7906ca9eb2d122845000c9416d894d7c2927149",
+      "bytes": 2128614
+    },
+    {
+      "path": "tokenizer_config.json",
+      "sha256": "ce06781b38bb393db68c9e0709bddd31ef5d88f2c6fbb3fd9f369778fb85e451",
+      "bytes": 20839
+    }
+  ],
+  "weights": {
+    "fp32": {
+      "path": "onnx/model.onnx",
+      "extra": [
+        {
+          "path": "onnx/model.onnx_data",
+          "sha256": "86a3a705d4598615894d89540ea71a3d9bbdb17a315e79edcd5dfc737222834b",
+          "bytes": 194844160
+        }
+      ],
+      "sha256": "cddb145cd1147ec24a3908b2ca2602b98b20a3d198365cff270b7cb26c98179e",
+      "bytes": 182504
+    },
+    "int8": {
+      "path": "onnx/model_quantized.onnx",
+      "extra": [
+        {
+          "path": "onnx/model_quantized.onnx_data",
+          "sha256": "1f4cf47e4adec7f7ae09db03d071ba8667e07f9a4203142c7efa8d37fe453597",
+          "bytes": 51885568
+        }
+      ],
+      "sha256": "a3fad524afc3f060216a8ddbb1ac89c9b6498fba8995b5718bde879076a2e9ba",
+      "bytes": 598902
+    }
+  }
+}

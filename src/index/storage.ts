@@ -7,6 +7,8 @@ export interface FileRecord {mtime:number;size:number;chunks:Chunk[]}
 export interface Snapshot {
   version:1;
   modelRevision:string;
+  /** Model weight variant that produced the vectors; different weights give incompatible vectors. */
+  weights?:string;
   codec:VectorCodec;
   files:Record<string,FileRecord>;
   vectorIds:string[];

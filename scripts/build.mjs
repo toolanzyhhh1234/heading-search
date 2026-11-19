@@ -2,23 +2,10 @@ import { build, context } from 'esbuild';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-export const wasmPlugin = {
-  name: 'inline-wasm',
-  setup(builder) {
-    builder.onResolve({filter: /\?base64$/}, args => ({
-      path: path.resolve('node_modules', args.path.replace(/\?base64$/, '')), namespace: 'base64',
-    }));
-    builder.onLoad({filter: /.*/, namespace: 'base64'}, async args => ({
-      contents: `export default ${JSON.stringify((await readFile(args.path)).toString('base64'))};`, loader: 'js',
-    }));
-  },
-};
-
 export async function buildWorker() {
   const result = await build({
     entryPoints: ['src/embedding/worker.ts'], bundle: true, write: false, format: 'iife',
     platform: 'browser', target: 'chrome120', minify: true, legalComments: 'inline',
-    plugins: [wasmPlugin],
   });
   return result.outputFiles[0].text;
 }
@@ -37,5 +24,5 @@ if (process.argv[1]?.replaceAll('\\', '/').endsWith('/scripts/build.mjs')) {
     banner: {js: `/*!\n${(license+'\n'+notices).replaceAll('*/','* /')}\n*/`},
   };
   if (process.argv.includes('--watch')) { const ctx = await context(options); await ctx.watch(); }
-  else { await build(options); console.log('Built main.js with bundled CPU runtime and worker.'); }
+  else { await build(options); console.log('Built main.js with the embedding worker.'); }
 }

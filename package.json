@@ -11,12 +11,13 @@
     "test": "node scripts/test.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "package": "npm run build && node scripts/package.mjs",
-    "test:runtime": "node scripts/runtime-smoke.mjs"
+    "test:runtime": "node scripts/runtime-smoke.mjs",
+    "benchmark:engines": "node scripts/benchmark-engines.mjs",
+    "pin-runtime": "node scripts/pin-runtime.mjs"
   },
   "dependencies": {
     "@huggingface/tokenizers": "0.2.0",
     "mdast-util-from-markdown": "2.0.2",
-    "onnxruntime-web": "1.17.3",
     "porter-stemmer": "0.9.1"
   },
   "devDependencies": {

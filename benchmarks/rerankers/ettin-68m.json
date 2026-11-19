@@ -1,0 +1,75 @@
+{
+  "key": "ettin-68m",
+  "kind": "reranker",
+  "id": "cross-encoder/ettin-reranker-68m-v1",
+  "upstream": "cross-encoder/ettin-reranker-68m-v1",
+  "revision": "d166fa88ddde3c42bc3ee92f7df476d941c8204a",
+  "license": "Apache-2.0",
+  "parameters": "68M",
+  "maxTokens": 512,
+  "files": [
+    {
+      "path": "tokenizer.json",
+      "sha256": "28c5e078e4c52aa37cf0e6de1a212878f3dbd58dd1c70466298efe0b6b86db35",
+      "bytes": 3583327
+    },
+    {
+      "path": "tokenizer_config.json",
+      "sha256": "2b85302525d8c528a9e1fbaea2733472bd00d4755eae881441c8c52b90e2d600",
+      "bytes": 488
+    },
+    {
+      "path": "1_Pooling/config.json",
+      "sha256": "6147ee30f9df2901f83bc99fbbae3951a64ba3333db85252164c0e849888a67b",
+      "bytes": 89
+    },
+    {
+      "path": "2_Dense/config.json",
+      "sha256": "b2a82c8f8d4ea4c5b87af1e633f65a5348f44d1c0c7f2de2913d17f9973080b3",
+      "bytes": 228
+    },
+    {
+      "path": "2_Dense/model.safetensors",
+      "sha256": "ee9b8a9186fffb05cea0cd73e2ccfc8a4bf641c075d8f304e5c4e4f5fe0716d0",
+      "bytes": 1048664
+    },
+    {
+      "path": "3_LayerNorm/config.json",
+      "sha256": "f3d06c06d736484f4a308c6e27a057c500c109cb372e9a0702bce14afa3952f1",
+      "bytes": 24
+    },
+    {
+      "path": "3_LayerNorm/model.safetensors",
+      "sha256": "3906f4be69408f4f370c7bfdc2de6ef825d4d1f4da4f01221d831336c0e3a91a",
+      "bytes": 4248
+    },
+    {
+      "path": "4_Dense/config.json",
+      "sha256": "0025e3b35cee1a6508f38e90524450075319b0b8cc0c34d4dfcbf56af5ca9ba0",
+      "bytes": 213
+    },
+    {
+      "path": "4_Dense/model.safetensors",
+      "sha256": "1a391820f020c8fc3efb1da894e1719cfdfb8a6c73d214f34f5b1802bac8b9dd",
+      "bytes": 2196
+    },
+    {
+      "path": "modules.json",
+      "sha256": "d8394ab6c24cb0fb80229dafb886fac022ff489e757e3e6ed7d69603d5ae5942",
+      "bytes": 678
+    }
+  ],
+  "weights": {
+    "fp32": {
+      "path": "onnx/model.onnx",
+      "sha256": "95505bbc6a95f9bdfad71e55998fec30c5cc0be490e921cbd796d2dbf0243f2f",
+      "bytes": 272978775
+    },
+    "int8": {
+      "path": "onnx/model_quint8_avx2.onnx",
+      "sha256": "32972293b8c229a906129aee4feb08fee3df993f9e5ed247179c94bcbbaae06a",
+      "bytes": 69276379
+    }
+  },
+  "head": "sentence-transformers"
+}

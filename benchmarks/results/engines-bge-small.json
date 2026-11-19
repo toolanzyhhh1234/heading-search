@@ -1,0 +1,37 @@
+{
+  "createdAt": "2026-11-19T08:55:58.943Z",
+  "model": "Xenova/bge-small-en-v1.5",
+  "runtime": "onnxruntime-node 1.22.0",
+  "hardware": {
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "platform": "win32-x64"
+  },
+  "sample": "128 evenly spaced SciFact/NFCorpus documents (title + text), sent 16 at a time as the plugin indexes; 32 queries one at a time",
+  "engines": {
+    "native-cpu-int8": {
+      "label": "Native CPU (4 threads)",
+      "weights": "int8",
+      "loadMs": 432.28839999999997,
+      "msPerDocument": 77.147678125,
+      "queryP50Ms": 6.984599999999773,
+      "queryP95Ms": 10.871600000000399
+    },
+    "native-cpu-fp32": {
+      "label": "Native CPU (4 threads)",
+      "weights": "fp32",
+      "loadMs": 766.2631000000001,
+      "msPerDocument": 141.28508359375002,
+      "queryP50Ms": 11.23519999999553,
+      "queryP95Ms": 17.287900000002992
+    },
+    "directml-fp32": {
+      "label": "DirectML GPU (queries on the CPU)",
+      "weights": "fp32",
+      "loadMs": 1106.4000000000015,
+      "msPerDocument": 83.8810890625,
+      "queryP50Ms": 9.444299999995565,
+      "queryP95Ms": 20.558899999996356
+    }
+  }
+}

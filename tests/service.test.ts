@@ -23,8 +23,8 @@ function fixture() {
   const app={vault:{adapter,getMarkdownFiles:()=>[...files.values()],getFileByPath:(path:string)=>files.get(path)??null,read:async(file:{path:string})=>contents.get(file.path)!}} as unknown as App;
   const settings={...DEFAULT_SETTINGS,codec:"int8" as const as import("../src/core/vectors").VectorCodec,excludedFolders:[] as string[]};
   let embeddings=0;
-  const embedding={embed:async(texts:string[])=>{embeddings+=texts.length;return texts.map(()=>{const vector=new Float32Array(384);vector[0]=1;return vector;});},dispose:()=>{}} as unknown as EmbeddingClient;
-  const service=()=>new SearchService(app,()=>settings,embedding,".obsidian/plugins/heading-search/index",()=>{});
+  const embedding={initialize:async()=>{},batchTexts:2,embed:async(texts:string[])=>{embeddings+=texts.length;return texts.map(()=>{const vector=new Float32Array(384);vector[0]=1;return vector;});},dispose:()=>{}} as unknown as EmbeddingClient;
+  const service=(weights="fp32")=>new SearchService(app,()=>settings,embedding,".obsidian/plugins/heading-search/index",()=>{},()=>weights);
   const put=(path:string,text:string)=>{contents.set(path,text);files.set(path,{path,stat:{mtime:(files.get(path)?.stat.mtime??0)+1,size:text.length}});};
   return {app,settings,service,put,files,strings,binaries,embedding,embeddings:()=>embeddings};
 }
@@ -48,6 +48,13 @@ test("semantic vectors persist without repeated embedding and changing codec reb
   service.dispose();service=f.service();await service.load();await service.refresh();assert.equal(f.embeddings(),1);
   assert.equal((await service.search("useful","vector"))[0].chunk.path,"Note.md");
   const before=f.embeddings();f.settings.codec="sq4";await service.refresh();assert.equal(f.embeddings(),before+1);
+});
+test("vectors from different model weights are never mixed: switching weights re-embeds",async()=>{
+  const f=fixture();f.settings.semanticEnabled=true;f.put("Note.md","# Ideas\nA useful thought.");
+  let service=f.service("int8");await service.load();await service.refresh();assert.equal(f.embeddings(),1);
+  service.dispose();service=f.service("int8");await service.load();await service.refresh();assert.equal(f.embeddings(),1);
+  service.dispose();service=f.service("fp32");await service.load();assert.equal(service.vectorCount,0);
+  await service.refresh();assert.equal(f.embeddings(),2);assert.equal(service.vectorCount,1);
 });
 test("interrupted or corrupt cache generations rebuild from notes",async()=>{
   const f=fixture();f.put("Note.md","# Restore\nRecover from the source note.");

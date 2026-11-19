@@ -1,0 +1,372 @@
+{
+  "createdAt": "2026-11-18T05:34:38.454Z",
+  "profile": "granite-97m-multi-r2-fp32",
+  "model": {
+    "key": "granite-97m-multi-r2",
+    "id": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "upstream": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "revision": "835ad14087e140460703cf0fae09f97d469d65c2",
+    "license": "Apache-2.0",
+    "parameters": "97M",
+    "dimensions": 384,
+    "maxTokens": 512,
+    "pooling": "cls",
+    "queryPrefix": "",
+    "documentPrefix": "",
+    "files": [
+      {
+        "path": "tokenizer.json",
+        "sha256": "4f2842d568e2724370aec203652a42ac783c7937f8347a1a2cc7506d71f1582f",
+        "bytes": 25301672
+      },
+      {
+        "path": "tokenizer_config.json",
+        "sha256": "6ed69389e30a8ecabfce2f9ebcdf0c908b34056f24d994340f2f216521c057d5",
+        "bytes": 12860
+      }
+    ],
+    "weights": {
+      "fp32": {
+        "path": "onnx/model.onnx",
+        "sha256": "68e592b160673d30250824c1116bc6ab33f70efb22b97c9e1d7ce1e69c1c9d70",
+        "bytes": 390004608
+      }
+    }
+  },
+  "runtime": "Full quality: the shipping native onnxruntime-node engine with granite-97m-multi-r2-fp32 weights, batched exactly as the plugin indexes. See each dataset's documentEmbedding.backend for the device.",
+  "sourceCommit": "211c36f829188a5aa6d0ab80110d368166e7daaf",
+  "hardware": {
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "totalMemoryBytes": 34085830656,
+    "platform": "win32",
+    "node": "v22.16.0"
+  },
+  "modelLoadMs": 0.0018999999999778083,
+  "datasets": {
+    "scifact": {
+      "corpus": 5183,
+      "queries": 300,
+      "inputSha256": {
+        "corpus.jsonl": "dec31c8182f3d744c7d2c09423756fd1d17cbef75808db13ba01cc0aab4d1ac6",
+        "queries.jsonl": "8ff84a7c903f722981cd8d595c022660140c51867b27608a6d4910db86080313",
+        "qrels/test.tsv": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+      },
+      "bm25IndexMs": 1480.1921,
+      "wasmRuntime": null,
+      "documentEmbedding": {
+        "totalMs": 360115.4207,
+        "perTextMs": 69.48011203935945,
+        "backend": "onnxruntime-node DirectML GPU (queries on the CPU), ibm-granite/granite-embedding-97m-multilingual-r2 (fp32 weights)",
+        "cached": true
+      },
+      "queryEmbedding": {
+        "totalMs": 3285.4907000000003,
+        "perTextMs": 10.951635666666668,
+        "backend": "onnxruntime-node DirectML GPU (queries on the CPU), ibm-granite/granite-embedding-97m-multilingual-r2 (fp32 weights)",
+        "cached": true
+      },
+      "storage": {
+        "f32": {
+          "bytes": 7961104,
+          "bytesPerVector": 1536,
+          "packMs": 26.391999999999825
+        },
+        "int8": {
+          "bytes": 2031752,
+          "bytesPerVector": 392,
+          "packMs": 62.31989999999951
+        },
+        "sq4": {
+          "bytes": 1036616,
+          "bytesPerVector": 200,
+          "packMs": 65.6226999999999
+        },
+        "rotated-sq4": {
+          "bytes": 1347596,
+          "bytesPerVector": 260,
+          "packMs": 170.48549999999977
+        }
+      },
+      "modes": {
+        "bm25": {
+          "ndcg10": 0.6894108809565073,
+          "recall10": 0.8301666666666667,
+          "mrr10": 0.6505661375661376,
+          "searchP50Ms": 1.1341000000011263,
+          "searchP95Ms": 2.110099999999875,
+          "ndcgGainOverBM25CI95": [
+            0,
+            0
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.008229770511114017,
+            0.006616181895539537
+          ]
+        },
+        "bm25-title": {
+          "ndcg10": 0.6900640418415973,
+          "recall10": 0.8206111111111111,
+          "mrr10": 0.6544140211640211,
+          "searchP50Ms": 1.105600000000777,
+          "searchP95Ms": 1.9888000000009924,
+          "ndcgGainOverBM25CI95": [
+            -0.006507232334278223,
+            0.0083004808562347
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0,
+            0
+          ]
+        },
+        "f32": {
+          "ndcg10": 0.6772274012168241,
+          "recall10": 0.8063333333333333,
+          "mrr10": 0.6401679894179896,
+          "searchP50Ms": 4.000600000000304,
+          "searchP95Ms": 4.5120999999999185,
+          "top10OverlapWithFloat": 1,
+          "ndcgGainOverBM25CI95": [
+            -0.045669506308444394,
+            0.020714675351179494
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.047078675771925454,
+            0.021213725999531228
+          ]
+        },
+        "int8": {
+          "ndcg10": 0.6836720829289752,
+          "recall10": 0.8096666666666666,
+          "mrr10": 0.6478531746031748,
+          "searchP50Ms": 4.92239999999947,
+          "searchP95Ms": 5.3726000000006024,
+          "top10OverlapWithFloat": 0.9753333333333334,
+          "ndcgGainOverBM25CI95": [
+            -0.03923811786603528,
+            0.02611216734730339
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.04080748509504859,
+            0.026838752609914033
+          ]
+        },
+        "sq4": {
+          "ndcg10": 0.6123934427910375,
+          "recall10": 0.7535555555555555,
+          "mrr10": 0.5728955026455026,
+          "searchP50Ms": 6.623799999999392,
+          "searchP95Ms": 7.084399999999732,
+          "top10OverlapWithFloat": 0.5439999999999998,
+          "ndcgGainOverBM25CI95": [
+            -0.11487182750902726,
+            -0.041439871417795156
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.11682794242028566,
+            -0.04047049637362514
+          ]
+        },
+        "rotated-sq4": {
+          "ndcg10": 0.6845151473496389,
+          "recall10": 0.8130000000000001,
+          "mrr10": 0.649490740740741,
+          "searchP50Ms": 9.940999999998894,
+          "searchP95Ms": 10.610399999999572,
+          "top10OverlapWithFloat": 0.932000000000001,
+          "ndcgGainOverBM25CI95": [
+            -0.038144856315391364,
+            0.027493095837487172
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.03972965128370561,
+            0.02817622961679382
+          ]
+        },
+        "hybrid-int8": {
+          "ndcg10": 0.7323658797113377,
+          "recall10": 0.8693888888888889,
+          "mrr10": 0.6975793650793649,
+          "searchP50Ms": 6.090099999999438,
+          "searchP95Ms": 7.074899999999616,
+          "ndcgGainOverBM25CI95": [
+            0.021394382344272468,
+            0.06532077977204889
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0.019979808014608937,
+            0.06547224432627481
+          ]
+        }
+      }
+    },
+    "nfcorpus": {
+      "corpus": 3633,
+      "queries": 323,
+      "inputSha256": {
+        "corpus.jsonl": "10cc83ef1826b1425e6a87090b5140b39b27755d5a27e48215a88611c899991f",
+        "queries.jsonl": "d024e6621b84925d485ae473d316a0c3af31c62c8068a59fb29d22f7613aef2a",
+        "qrels/test.tsv": "f8fba6ef3d4dd9c3a242a8ba4ae38276fc3622fce7dcbae764766d564542fd2a"
+      },
+      "bm25IndexMs": 1037.594500000001,
+      "wasmRuntime": null,
+      "documentEmbedding": {
+        "totalMs": 276954.27540000004,
+        "perTextMs": 76.2329412056152,
+        "backend": "onnxruntime-node DirectML GPU (queries on the CPU), ibm-granite/granite-embedding-97m-multilingual-r2 (fp32 weights)",
+        "cached": true
+      },
+      "queryEmbedding": {
+        "totalMs": 1867.4002999999793,
+        "perTextMs": 5.781425077399317,
+        "backend": "onnxruntime-node DirectML GPU (queries on the CPU), ibm-granite/granite-embedding-97m-multilingual-r2 (fp32 weights)",
+        "cached": true
+      },
+      "storage": {
+        "f32": {
+          "bytes": 5580304,
+          "bytesPerVector": 1536,
+          "packMs": 14.064900000001217
+        },
+        "int8": {
+          "bytes": 1424152,
+          "bytesPerVector": 392,
+          "packMs": 40.33400000000074
+        },
+        "sq4": {
+          "bytes": 726616,
+          "bytesPerVector": 200,
+          "packMs": 41.01389999999992
+        },
+        "rotated-sq4": {
+          "bytes": 944596,
+          "bytesPerVector": 260,
+          "packMs": 108.62830000000031
+        }
+      },
+      "modes": {
+        "bm25": {
+          "ndcg10": 0.3290383246396621,
+          "recall10": 0.15631751714609463,
+          "mrr10": 0.5338567005749669,
+          "searchP50Ms": 0.13500000000021828,
+          "searchP95Ms": 0.871900000001915,
+          "ndcgGainOverBM25CI95": [
+            0,
+            0
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.004397283547002899,
+            0.001542442394410784
+          ]
+        },
+        "bm25-title": {
+          "ndcg10": 0.33041872543475753,
+          "recall10": 0.15692515785414043,
+          "mrr10": 0.5357732566710897,
+          "searchP50Ms": 0.10210000000006403,
+          "searchP95Ms": 0.6825000000008004,
+          "ndcgGainOverBM25CI95": [
+            -0.0015340714986602293,
+            0.0044165327948803654
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0,
+            0
+          ]
+        },
+        "f32": {
+          "ndcg10": 0.2970571748130947,
+          "recall10": 0.1480174901060568,
+          "mrr10": 0.4895768833849329,
+          "searchP50Ms": 2.9924000000028173,
+          "searchP95Ms": 3.6031000000002678,
+          "top10OverlapWithFloat": 1,
+          "ndcgGainOverBM25CI95": [
+            -0.05406631834293679,
+            -0.011142946624715943
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.05581557849033191,
+            -0.011984000175290208
+          ]
+        },
+        "int8": {
+          "ndcg10": 0.2974218233500317,
+          "recall10": 0.14845344501293223,
+          "mrr10": 0.4862192245319181,
+          "searchP50Ms": 3.5819999999985157,
+          "searchP95Ms": 4.16990000000078,
+          "top10OverlapWithFloat": 0.965325077399381,
+          "ndcgGainOverBM25CI95": [
+            -0.053865801686717917,
+            -0.00992309247281276
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.05528762281449504,
+            -0.01107124489521398
+          ]
+        },
+        "sq4": {
+          "ndcg10": 0.23067782484678379,
+          "recall10": 0.10999054479582307,
+          "mrr10": 0.41516413582977046,
+          "searchP50Ms": 4.744699999999284,
+          "searchP95Ms": 5.456299999998009,
+          "top10OverlapWithFloat": 0.4371517027863781,
+          "ndcgGainOverBM25CI95": [
+            -0.12202742929640904,
+            -0.07353649856835488
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.1240064550464717,
+            -0.07430690497077395
+          ]
+        },
+        "rotated-sq4": {
+          "ndcg10": 0.29339478611962944,
+          "recall10": 0.14562932135313214,
+          "mrr10": 0.4893164283257164,
+          "searchP50Ms": 7.0024000000012165,
+          "searchP95Ms": 7.684299999997165,
+          "top10OverlapWithFloat": 0.9145510835913321,
+          "ndcgGainOverBM25CI95": [
+            -0.05825482769709258,
+            -0.013816024050443756
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.05980567978225656,
+            -0.014774324828086972
+          ]
+        },
+        "hybrid-int8": {
+          "ndcg10": 0.34991566667599777,
+          "recall10": 0.1746213956890098,
+          "mrr10": 0.5562140645731977,
+          "searchP50Ms": 3.7563000000009197,
+          "searchP95Ms": 4.59559999999874,
+          "ndcgGainOverBM25CI95": [
+            0.007329986561463144,
+            0.03409472828688092
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0.005894495692096939,
+            0.03289104446542843
+          ]
+        }
+      }
+    }
+  },
+  "policy": {
+    "minimumMeanNdcgGain": 0.01,
+    "minimumPerDatasetGain": 0,
+    "maxQuantizationNdcgLoss": 0.005,
+    "maxQuantizationScanSlowdown": 1.5
+  },
+  "methodology": "Full BEIR test queries and full document corpora. Title + text. Canonical document retrieval (no synthetic headings). BM25 k1=1.2, b=0.75, fixed English stopwords and Porter stemming. BGE CLS pooling, L2 normalized, query instruction, 512 tokens. No tuning on test queries. Unjudged documents treated as non-relevant. Timings include worker messaging; model-load time separate.",
+  "recommendation": {
+    "defaultMode": "bm25",
+    "reason": "Dense vectors must first beat both plain and title-weighted BM25 with >= 0.01 absolute macro nDCG@10 gain over the stronger baseline, no dataset regression, and positive paired bootstrap lower bounds on each dataset. A hybrid default must independently clear the same gate. Otherwise default to heading-aware BM25. Quantization is evaluated separately from model quality.",
+    "codec": "int8"
+  }
+}

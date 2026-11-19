@@ -1,0 +1,222 @@
+{
+  "ettin-17m-fp32": {
+    "createdAt": "2026-11-18T06:56:02.804Z",
+    "reranker": {
+      "key": "ettin-17m",
+      "id": "cross-encoder/ettin-reranker-17m-v1",
+      "revision": "9e4aa35321a6dd1a43ca313f500c4b4f7cfb5cc6",
+      "parameters": "17M",
+      "weights": "fp32"
+    },
+    "engine": "DirectML GPU",
+    "firstStage": "onnx-community/granite-embedding-small-english-r2-ONNX hybrid (title-weighted BM25 + int8 dense, RRF k=60)",
+    "depth": 50,
+    "loadMs": 479.08990000000017,
+    "datasets": {
+      "scifact": {
+        "queries": 300,
+        "newPairsScored": 0,
+        "latencyMs": {
+          "p50": 1155,
+          "p95": null,
+          "samples": 300,
+          "note": "From the first full run; the cached rerun scored no new pairs."
+        },
+        "modes": {
+          "first": {
+            "ndcg10": 0.7451127565067204,
+            "recall10": 0.8741111111111112,
+            "mrr10": 0.7145529100529099,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.7339835674449345,
+            "recall10": 0.8612222222222222,
+            "mrr10": 0.7005502645502643,
+            "gainOverFirstCI95": [
+              -0.03334220802955865,
+              0.010522666901684923
+            ]
+          },
+          "rerank@50": {
+            "ndcg10": 0.7299843579212584,
+            "recall10": 0.8562222222222222,
+            "mrr10": 0.6973677248677245,
+            "gainOverFirstCI95": [
+              -0.038523326686069635,
+              0.007995346180900847
+            ]
+          }
+        }
+      },
+      "nfcorpus": {
+        "queries": 323,
+        "newPairsScored": 0,
+        "latencyMs": {
+          "p50": 1199,
+          "p95": null,
+          "samples": 323,
+          "note": "From the first full run; the cached rerun scored no new pairs."
+        },
+        "modes": {
+          "first": {
+            "ndcg10": 0.3763429813065046,
+            "recall10": 0.18114155786969457,
+            "mrr10": 0.5904602191753894,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.35624090143867615,
+            "recall10": 0.175993095230456,
+            "mrr10": 0.5629048110472258,
+            "gainOverFirstCI95": [
+              -0.034640915489966236,
+              -0.005778918867345796
+            ]
+          },
+          "rerank@50": {
+            "ndcg10": 0.341942000980522,
+            "recall10": 0.16879192637913276,
+            "mrr10": 0.5434112241387784,
+            "gainOverFirstCI95": [
+              -0.05028284545322197,
+              -0.017582823198541053
+            ]
+          }
+        }
+      }
+    }
+  },
+  "ettin-32m-fp32": {
+    "createdAt": "2026-11-18T06:56:23.833Z",
+    "reranker": {
+      "key": "ettin-32m",
+      "id": "cross-encoder/ettin-reranker-32m-v1",
+      "revision": "b33e5ceb5110773ea9cf5e00c9bedc83a8c2afdd",
+      "parameters": "32M",
+      "weights": "fp32"
+    },
+    "engine": "DirectML GPU",
+    "firstStage": "onnx-community/granite-embedding-small-english-r2-ONNX hybrid (title-weighted BM25 + int8 dense, RRF k=60)",
+    "depth": 20,
+    "loadMs": 553.8148000000001,
+    "datasets": {
+      "scifact": {
+        "queries": 300,
+        "newPairsScored": 0,
+        "latencyMs": null,
+        "modes": {
+          "first": {
+            "ndcg10": 0.7451127565067204,
+            "recall10": 0.8741111111111112,
+            "mrr10": 0.7145529100529099,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.751308509802894,
+            "recall10": 0.8662222222222222,
+            "mrr10": 0.7224537037037035,
+            "gainOverFirstCI95": [
+              -0.017206124716275858,
+              0.028536245784594964
+            ]
+          }
+        }
+      },
+      "nfcorpus": {
+        "queries": 323,
+        "newPairsScored": 6460,
+        "latencyMs": {
+          "p50": 1220.05130000005,
+          "p95": 2134.6226000000024,
+          "samples": 323
+        },
+        "modes": {
+          "first": {
+            "ndcg10": 0.3763429813065046,
+            "recall10": 0.18114155786969457,
+            "mrr10": 0.5904602191753894,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.35848569904012095,
+            "recall10": 0.1778345077851744,
+            "mrr10": 0.5671200058970955,
+            "gainOverFirstCI95": [
+              -0.03126805299583808,
+              -0.0040046169663646445
+            ]
+          }
+        }
+      }
+    }
+  },
+  "ettin-68m-fp32": {
+    "createdAt": "2026-11-18T07:03:54.263Z",
+    "reranker": {
+      "key": "ettin-68m",
+      "id": "cross-encoder/ettin-reranker-68m-v1",
+      "revision": "d166fa88ddde3c42bc3ee92f7df476d941c8204a",
+      "parameters": "68M",
+      "weights": "fp32"
+    },
+    "engine": "DirectML GPU",
+    "firstStage": "onnx-community/granite-embedding-small-english-r2-ONNX hybrid (title-weighted BM25 + int8 dense, RRF k=60)",
+    "depth": 20,
+    "loadMs": 922.7336,
+    "datasets": {
+      "scifact": {
+        "queries": 300,
+        "newPairsScored": 6000,
+        "latencyMs": {
+          "p50": 2560.5090999999957,
+          "p95": 3101.3274,
+          "samples": 300
+        },
+        "modes": {
+          "first": {
+            "ndcg10": 0.7451127565067204,
+            "recall10": 0.8741111111111112,
+            "mrr10": 0.7145529100529099,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.7642171534572177,
+            "recall10": 0.8768888888888888,
+            "mrr10": 0.7355238095238092,
+            "gainOverFirstCI95": [
+              -0.0038845503862556642,
+              0.04304229008146079
+            ]
+          }
+        }
+      },
+      "nfcorpus": {
+        "queries": 323,
+        "newPairsScored": 6460,
+        "latencyMs": {
+          "p50": 2654.877899999963,
+          "p95": 3088.847700000042,
+          "samples": 323
+        },
+        "modes": {
+          "first": {
+            "ndcg10": 0.3763429813065046,
+            "recall10": 0.18114155786969457,
+            "mrr10": 0.5904602191753894,
+            "gainOverFirstCI95": null
+          },
+          "rerank@20": {
+            "ndcg10": 0.3648436949189512,
+            "recall10": 0.17520219874463508,
+            "mrr10": 0.588622291021672,
+            "gainOverFirstCI95": [
+              -0.024931095285448845,
+              0.0022873564875972533
+            ]
+          }
+        }
+      }
+    }
+  }
+}

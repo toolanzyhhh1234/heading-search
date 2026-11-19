@@ -1,0 +1,37 @@
+{
+  "createdAt": "2026-11-19T08:54:54.101Z",
+  "model": "onnx-community/granite-embedding-small-english-r2-ONNX",
+  "runtime": "onnxruntime-node 1.22.0",
+  "hardware": {
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "platform": "win32-x64"
+  },
+  "sample": "128 evenly spaced SciFact/NFCorpus documents (title + text), sent 16 at a time as the plugin indexes; 32 queries one at a time",
+  "engines": {
+    "native-cpu-int8": {
+      "label": "Native CPU (4 threads)",
+      "weights": "int8",
+      "loadMs": 744.0887,
+      "msPerDocument": 99.4550453125,
+      "queryP50Ms": 5.875,
+      "queryP95Ms": 10.283500000001368
+    },
+    "native-cpu-fp32": {
+      "label": "Native CPU (4 threads)",
+      "weights": "fp32",
+      "loadMs": 1099.6522000000004,
+      "msPerDocument": 176.97397109375,
+      "queryP50Ms": 8.893000000003667,
+      "queryP95Ms": 20.49369999999908
+    },
+    "directml-fp32": {
+      "label": "DirectML GPU (queries on the CPU)",
+      "weights": "fp32",
+      "loadMs": 1535.9775000000009,
+      "msPerDocument": 141.19249609375004,
+      "queryP50Ms": 9.56710000000021,
+      "queryP95Ms": 18.203800000002957
+    }
+  }
+}

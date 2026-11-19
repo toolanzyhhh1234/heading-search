@@ -1,0 +1,39 @@
+{
+  "key": "granite-r2",
+  "id": "onnx-community/granite-embedding-english-r2-ONNX",
+  "upstream": "ibm-granite/granite-embedding-english-r2",
+  "revision": "2a49b9c076aa627b14bc528b36b67462808ccc23",
+  "license": "Apache-2.0",
+  "parameters": "149M",
+  "dimensions": 768,
+  "maxTokens": 512,
+  "pooling": "cls",
+  "queryPrefix": "",
+  "documentPrefix": "",
+  "files": [
+    {
+      "path": "tokenizer.json",
+      "sha256": "feeb83348dcb033bc6b9d2e1f7906ca9eb2d122845000c9416d894d7c2927149",
+      "bytes": 2128614
+    },
+    {
+      "path": "tokenizer_config.json",
+      "sha256": "ce06781b38bb393db68c9e0709bddd31ef5d88f2c6fbb3fd9f369778fb85e451",
+      "bytes": 20839
+    }
+  ],
+  "weights": {
+    "fp32": {
+      "path": "onnx/model.onnx",
+      "extra": [
+        {
+          "path": "onnx/model.onnx_data",
+          "sha256": "8908e322c264f4ce0618efb5405a2b044541efc8711fa770f56ca9661898cb49",
+          "bytes": 604445696
+        }
+      ],
+      "sha256": "ce8cf0b24f01ef35797265b7c392da8fc0a79e532ab6972a82e4c1a90f8466cb",
+      "bytes": 324575
+    }
+  }
+}

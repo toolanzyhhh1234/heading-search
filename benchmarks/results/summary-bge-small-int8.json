@@ -1,0 +1,395 @@
+{
+  "createdAt": "2026-11-03T05:29:33.869Z",
+  "model": {
+    "id": "Xenova/bge-small-en-v1.5",
+    "revision": "ea104dacec62c0de699686887e3f920caeb4f3e3",
+    "dimensions": 384,
+    "maxTokens": 512,
+    "pooling": "cls",
+    "queryPrefix": "Represent this sentence for searching relevant passages: ",
+    "license": "MIT (BAAI upstream model)",
+    "files": [
+      {
+        "path": "tokenizer.json",
+        "sha256": "d241a60d5e8f04cc1b2b3e9ef7a4921b27bf526d9f6050ab90f9267a1f9e5c66",
+        "bytes": 711396
+      },
+      {
+        "path": "tokenizer_config.json",
+        "sha256": "9261e7d79b44c8195c1cada2b453e55b00aeb81e907a6664974b4d7776172ab3",
+        "bytes": 366
+      },
+      {
+        "path": "onnx/model_quantized.onnx",
+        "sha256": "6c9c6101a956d62dfb5e7190c538226c0c5bb9cb27b651234b6df063ee7dbfe4",
+        "bytes": 34014426
+      }
+    ]
+  },
+  "runtime": "Full quality and sampled latency: exact shipping onnxruntime-web 1.17.3 SIMD WASM engine, one CPU thread per inference, no GPU. Four independent workers accelerate corpus preparation only; latency samples use one worker.",
+  "sourceCommit": "b25b086e5a0f25fdc7199a10a3dc9c8e1e9ac379",
+  "hardware": {
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "totalMemoryBytes": 34085830656,
+    "platform": "win32",
+    "node": "v22.16.0"
+  },
+  "modelLoadMs": 1052.1975,
+  "datasets": {
+    "scifact": {
+      "corpus": 5183,
+      "queries": 300,
+      "inputSha256": {
+        "corpus.jsonl": "dec31c8182f3d744c7d2c09423756fd1d17cbef75808db13ba01cc0aab4d1ac6",
+        "queries.jsonl": "8ff84a7c903f722981cd8d595c022660140c51867b27608a6d4910db86080313",
+        "qrels/test.tsv": "0864bb985e0ca2367ba217977e72004d549054b2b06666ed9d4825ac7c21284c"
+      },
+      "bm25IndexMs": 1848.7269000000001,
+      "wasmRuntime": {
+        "parity": {
+          "maxAbsComponentError": 0,
+          "minCosine": 0.9999999825423475,
+          "documents": 12,
+          "queries": 32
+        },
+        "documentP50Ms": 922.0874000000003,
+        "documentP95Ms": 1137.9722999999994,
+        "queryP50Ms": 43.88409999999931,
+        "queryP95Ms": 82.58069999999861
+      },
+      "documentEmbedding": {
+        "totalMs": 1073326.1043,
+        "p50Ms": 770.0101000000723,
+        "p95Ms": 1482.0840000000026,
+        "backend": "onnxruntime-web 1.17.3 SIMD WASM, one thread per request, 4 independent workers for benchmark preparation",
+        "completedPreviously": 0,
+        "cached": true
+      },
+      "queryEmbedding": {
+        "totalMs": 3928.4865,
+        "p50Ms": 48.38310000000001,
+        "p95Ms": 83.0607,
+        "backend": "onnxruntime-web 1.17.3 SIMD WASM, one thread per request, 4 independent workers for benchmark preparation",
+        "completedPreviously": 0,
+        "cached": true
+      },
+      "storage": {
+        "f32": {
+          "bytes": 7961104,
+          "bytesPerVector": 1536,
+          "packMs": 121.15559999999823
+        },
+        "int8": {
+          "bytes": 2031752,
+          "bytesPerVector": 392,
+          "packMs": 84.11699999999837
+        },
+        "sq4": {
+          "bytes": 1036616,
+          "bytesPerVector": 200,
+          "packMs": 85.13509999999951
+        },
+        "rotated-sq4": {
+          "bytes": 1347596,
+          "bytesPerVector": 260,
+          "packMs": 209.2386000000006
+        }
+      },
+      "modes": {
+        "bm25": {
+          "ndcg10": 0.6894108809565073,
+          "recall10": 0.8301666666666667,
+          "mrr10": 0.6505661375661376,
+          "searchP50Ms": 1.5054999999993015,
+          "searchP95Ms": 3.383700000002136,
+          "ndcgGainOverBM25CI95": [
+            0,
+            0
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.008229770511114017,
+            0.006616181895539537
+          ]
+        },
+        "bm25-title": {
+          "ndcg10": 0.6900640418415973,
+          "recall10": 0.8206111111111111,
+          "mrr10": 0.6544140211640211,
+          "searchP50Ms": 1.5005999999993946,
+          "searchP95Ms": 3.6310000000012224,
+          "ndcgGainOverBM25CI95": [
+            -0.006507232334278223,
+            0.0083004808562347
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0,
+            0
+          ]
+        },
+        "f32": {
+          "ndcg10": 0.710449884141068,
+          "recall10": 0.8412222222222222,
+          "mrr10": 0.6767804232804233,
+          "searchP50Ms": 5.98410000000149,
+          "searchP95Ms": 10.147499999999127,
+          "top10OverlapWithFloat": 1,
+          "ndcgGainOverBM25CI95": [
+            -0.011104858902282758,
+            0.052280208365281036
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.013011818388077181,
+            0.05208304593791436
+          ]
+        },
+        "int8": {
+          "ndcg10": 0.7078917250645592,
+          "recall10": 0.8378888888888889,
+          "mrr10": 0.674313492063492,
+          "searchP50Ms": 7.32930000000124,
+          "searchP95Ms": 11.857600000003004,
+          "top10OverlapWithFloat": 0.9843333333333336,
+          "ndcgGainOverBM25CI95": [
+            -0.013699340626422467,
+            0.04916489403674986
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.015227633339576864,
+            0.04921715293337947
+          ]
+        },
+        "sq4": {
+          "ndcg10": 0.6829182938491228,
+          "recall10": 0.8095555555555556,
+          "mrr10": 0.6508783068783068,
+          "searchP50Ms": 9.488400000002002,
+          "searchP95Ms": 17.21320000000196,
+          "top10OverlapWithFloat": 0.7490000000000007,
+          "ndcgGainOverBM25CI95": [
+            -0.039895037216898535,
+            0.027060809637109592
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.042144649119207116,
+            0.026849469140374786
+          ]
+        },
+        "rotated-sq4": {
+          "ndcg10": 0.7031646051308035,
+          "recall10": 0.8445555555555556,
+          "mrr10": 0.6654338624338623,
+          "searchP50Ms": 14.178799999997864,
+          "searchP95Ms": 23.362199999999575,
+          "top10OverlapWithFloat": 0.9236666666666683,
+          "ndcgGainOverBM25CI95": [
+            -0.018865874012521676,
+            0.04492845511326144
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.019696149848176966,
+            0.04564323447182767
+          ]
+        },
+        "hybrid-int8": {
+          "ndcg10": 0.7216369495285497,
+          "recall10": 0.8578888888888889,
+          "mrr10": 0.6848478835978836,
+          "searchP50Ms": 9.242500000000291,
+          "searchP95Ms": 15.479800000004616,
+          "ndcgGainOverBM25CI95": [
+            0.012400939740598362,
+            0.053412324962612584
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0.010256864889432756,
+            0.054320943758613384
+          ]
+        }
+      }
+    },
+    "nfcorpus": {
+      "corpus": 3633,
+      "queries": 323,
+      "inputSha256": {
+        "corpus.jsonl": "10cc83ef1826b1425e6a87090b5140b39b27755d5a27e48215a88611c899991f",
+        "queries.jsonl": "d024e6621b84925d485ae473d316a0c3af31c62c8068a59fb29d22f7613aef2a",
+        "qrels/test.tsv": "f8fba6ef3d4dd9c3a242a8ba4ae38276fc3622fce7dcbae764766d564542fd2a"
+      },
+      "bm25IndexMs": 1885.7160999999978,
+      "wasmRuntime": {
+        "parity": {
+          "maxAbsComponentError": 0,
+          "minCosine": 0.9999999814337641,
+          "documents": 12,
+          "queries": 32
+        },
+        "documentP50Ms": 818.5666999999958,
+        "documentP95Ms": 1137.0109000000011,
+        "queryP50Ms": 32.439699999995355,
+        "queryP95Ms": 45.16440000000148
+      },
+      "documentEmbedding": {
+        "totalMs": 905227.3947000001,
+        "p50Ms": 994.7707999998238,
+        "p95Ms": 1608.1748999999836,
+        "backend": "onnxruntime-web 1.17.3 SIMD WASM, one thread per request, 4 independent workers for benchmark preparation",
+        "completedPreviously": 0,
+        "cached": true
+      },
+      "queryEmbedding": {
+        "totalMs": 3141.937300000107,
+        "p50Ms": 35.578600000124425,
+        "p95Ms": 57.34210000000894,
+        "backend": "onnxruntime-web 1.17.3 SIMD WASM, one thread per request, 4 independent workers for benchmark preparation",
+        "completedPreviously": 0,
+        "cached": true
+      },
+      "storage": {
+        "f32": {
+          "bytes": 5580304,
+          "bytesPerVector": 1536,
+          "packMs": 24.9062999999951
+        },
+        "int8": {
+          "bytes": 1424152,
+          "bytesPerVector": 392,
+          "packMs": 41.92729999999574
+        },
+        "sq4": {
+          "bytes": 726616,
+          "bytesPerVector": 200,
+          "packMs": 43.16969999999856
+        },
+        "rotated-sq4": {
+          "bytes": 944596,
+          "bytesPerVector": 260,
+          "packMs": 129.54309999999532
+        }
+      },
+      "modes": {
+        "bm25": {
+          "ndcg10": 0.3290383246396621,
+          "recall10": 0.15631751714609463,
+          "mrr10": 0.5338567005749669,
+          "searchP50Ms": 0.19799999999668216,
+          "searchP95Ms": 1.3841000000029453,
+          "ndcgGainOverBM25CI95": [
+            0,
+            0
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.004397283547002899,
+            0.001542442394410784
+          ]
+        },
+        "bm25-title": {
+          "ndcg10": 0.33041872543475753,
+          "recall10": 0.15692515785414043,
+          "mrr10": 0.5357732566710897,
+          "searchP50Ms": 0.1485000000029686,
+          "searchP95Ms": 1.2206999999980326,
+          "ndcgGainOverBM25CI95": [
+            -0.0015340714986602293,
+            0.0044165327948803654
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0,
+            0
+          ]
+        },
+        "f32": {
+          "ndcg10": 0.3447521409948723,
+          "recall10": 0.162075285242414,
+          "mrr10": 0.5345053810998085,
+          "searchP50Ms": 4.3620000000009895,
+          "searchP95Ms": 7.326399999998102,
+          "top10OverlapWithFloat": 1,
+          "ndcgGainOverBM25CI95": [
+            -0.0033300807014960397,
+            0.03536797976796436
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.004728716698092509,
+            0.03416416874789882
+          ]
+        },
+        "int8": {
+          "ndcg10": 0.3445957984032024,
+          "recall10": 0.1618634593193785,
+          "mrr10": 0.535528772912674,
+          "searchP50Ms": 5.022100000001956,
+          "searchP95Ms": 8.275199999996403,
+          "top10OverlapWithFloat": 0.9773993808049528,
+          "ndcgGainOverBM25CI95": [
+            -0.003171442511819351,
+            0.03522252299391085
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.004473750800168883,
+            0.03405107822453462
+          ]
+        },
+        "sq4": {
+          "ndcg10": 0.3313534373276372,
+          "recall10": 0.15763050773215373,
+          "mrr10": 0.5103272888102609,
+          "searchP50Ms": 6.7114999999976135,
+          "searchP95Ms": 10.773199999995995,
+          "top10OverlapWithFloat": 0.7154798761609908,
+          "ndcgGainOverBM25CI95": [
+            -0.016781937474591297,
+            0.0217876188610325
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.017714962598008848,
+            0.02062861796083694
+          ]
+        },
+        "rotated-sq4": {
+          "ndcg10": 0.3419133493828153,
+          "recall10": 0.16195619381887882,
+          "mrr10": 0.5316858322276281,
+          "searchP50Ms": 10.245200000004843,
+          "searchP95Ms": 15.659299999999348,
+          "top10OverlapWithFloat": 0.9068111455108371,
+          "ndcgGainOverBM25CI95": [
+            -0.00647276555551077,
+            0.032471037095221734
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            -0.007250098503580554,
+            0.031358460023182454
+          ]
+        },
+        "hybrid-int8": {
+          "ndcg10": 0.36661518917208236,
+          "recall10": 0.17339287397937594,
+          "mrr10": 0.5755835667600372,
+          "searchP50Ms": 5.537899999995716,
+          "searchP95Ms": 9.015399999996589,
+          "ndcgGainOverBM25CI95": [
+            0.024328807291738842,
+            0.051038186166157296
+          ],
+          "ndcgGainOverTitleBM25CI95": [
+            0.02322063038018152,
+            0.04982220021048437
+          ]
+        }
+      }
+    }
+  },
+  "policy": {
+    "minimumMeanNdcgGain": 0.01,
+    "minimumPerDatasetGain": 0,
+    "maxQuantizationNdcgLoss": 0.005,
+    "maxQuantizationScanSlowdown": 1.5
+  },
+  "methodology": "Full BEIR test queries and full document corpora. Title + text. Canonical document retrieval (no synthetic headings). BM25 k1=1.2, b=0.75, fixed English stopwords and Porter stemming. BGE CLS pooling, L2 normalized, query instruction, 512 tokens. No tuning on test queries. Unjudged documents treated as non-relevant. Timings include worker messaging; model-load time separate.",
+  "recommendation": {
+    "defaultMode": "bm25",
+    "reason": "Dense vectors must first beat both plain and title-weighted BM25 with >= 0.01 absolute macro nDCG@10 gain over the stronger baseline, no dataset regression, and positive paired bootstrap lower bounds on each dataset. A hybrid default must independently clear the same gate. Otherwise default to heading-aware BM25. Quantization is evaluated separately from model quality.",
+    "codec": "int8"
+  }
+}

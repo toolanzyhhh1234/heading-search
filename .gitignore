@@ -9,3 +9,11 @@ benchmarks/data/
 benchmarks/cache/
 benchmarks/results/*.json
 !benchmarks/results/summary.json
+!benchmarks/results/summary-bge-small-int8.json
+!benchmarks/results/engines-bge-small.json
+!benchmarks/results/summary-native-fp32.json
+!benchmarks/results/summary-native-fp16.json
+!benchmarks/results/engines.json
+!benchmarks/results/summary-granite-*-fp32.json
+!benchmarks/results/models.json
+!benchmarks/results/rerank.json
