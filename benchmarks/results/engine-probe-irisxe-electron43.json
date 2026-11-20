@@ -1,0 +1,264 @@
+{
+  "createdAt": "2026-11-20T05:52:49.290Z",
+  "environment": {
+    "electron": "43.8.9",
+    "chrome": "150.0.7871.250",
+    "platform": "win32",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "windowCrossOriginIsolated": false,
+    "documentFocused": true
+  },
+  "configs": [
+    {
+      "label": "native CPU fp32 (reference)",
+      "weights": "fp32",
+      "batch": "cpu",
+      "wallMs": 25632,
+      "focused": false,
+      "focusLosses": 1,
+      "ok": true,
+      "env": {},
+      "loadMs": 337.7,
+      "firstPassMsPerDoc": 127.1,
+      "msPerDoc": 129.5,
+      "queryMs": 10,
+      "minCosineVsNativefp32": 0.999999957103615
+    },
+    {
+      "label": "native CPU int8 (shipped CPU path)",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 13568,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {},
+      "loadMs": 155.7,
+      "firstPassMsPerDoc": 69.5,
+      "msPerDoc": 67.5,
+      "queryMs": 4.8,
+      "minCosineVsNativefp32": 0.9888709301291544,
+      "minCosineVsNativeint8": 0.9999999573222338
+    },
+    {
+      "label": "native DirectML fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 28329,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {},
+      "loadMs": 266.2,
+      "firstPassMsPerDoc": 153.4,
+      "msPerDoc": 94,
+      "queryMs": 300.5,
+      "minCosineVsNativefp32": 0.9999999609322151,
+      "minCosineVsNativeint8": 0.988870920838401
+    },
+    {
+      "label": "native DirectML fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 30375,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {},
+      "loadMs": 249.8,
+      "firstPassMsPerDoc": 183.8,
+      "msPerDoc": 128.2,
+      "queryMs": 73.2,
+      "minCosineVsNativefp32": 0.9999999588042897,
+      "minCosineVsNativeint8": 0.9888709297314281
+    },
+    {
+      "label": "web WASM int8, 1 thread",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 95166,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "threadsUsed": 1
+      },
+      "loadMs": 380.6,
+      "firstPassMsPerDoc": 503.5,
+      "msPerDoc": 481.4,
+      "queryMs": 29.9,
+      "minCosineVsNativefp32": 0.989023080610795,
+      "minCosineVsNativeint8": 0.9967975313747698
+    },
+    {
+      "label": "web WASM int8, 4 threads",
+      "ok": false,
+      "skipped": true,
+      "error": "skipped: the window is not cross-origin isolated, and threaded WASM hung there"
+    },
+    {
+      "label": "web WebGPU (JSEP, ort.bundle) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 1445,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "error": "[WebGPU] Kernel \"[Mul] /model/layers.0/attn/k_rotary/term2_mul\" failed. Error: Can't perform binary op on the given tensors"
+    },
+    {
+      "label": "web WebGPU (JSEP, ort.bundle) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 5891,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "error": "[WebGPU] Kernel \"[Mul] /model/layers.0/attn/k_rotary/term2_mul\" failed. Error: Can't perform binary op on the given tensors"
+    },
+    {
+      "label": "web WebGPU (native EP, asyncify) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 58760,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 1034.7,
+      "firstPassMsPerDoc": 291,
+      "msPerDoc": 290.4,
+      "queryMs": 24.5,
+      "minCosineVsNativefp32": 0.9999999621071524,
+      "minCosineVsNativeint8": 0.988870929902204
+    },
+    {
+      "label": "web WebGPU (native EP, asyncify) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 76769,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 1079.8,
+      "firstPassMsPerDoc": 252.5,
+      "msPerDoc": 458,
+      "queryMs": 26.5,
+      "minCosineVsNativefp32": 0.9999999604364731,
+      "minCosineVsNativeint8": 0.9888709044325779
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 55430,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 696.3,
+      "firstPassMsPerDoc": 265.2,
+      "msPerDoc": 289.5,
+      "queryMs": 21,
+      "minCosineVsNativefp32": 0.9999999621071524,
+      "minCosineVsNativeint8": 0.988870929902204
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 75561,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 676.3,
+      "firstPassMsPerDoc": 254.9,
+      "msPerDoc": 450.4,
+      "queryMs": 25.1,
+      "minCosineVsNativefp32": 0.9999999604364731,
+      "minCosineVsNativeint8": 0.9888709044325779
+    }
+  ],
+  "done": true
+}

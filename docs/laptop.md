@@ -53,3 +53,9 @@ Commit the Iris Xe probe results from before this branch was shared, if they are
 ## Results log
 
 Short notes from the laptop, newest first: date, task, commit, anything unusual.
+
+- 2026-11-20, add the Iris Xe engine probe results, commit "Add the Iris Xe engine probe results". One-time setup done
+  in the laptop's existing clone (Obsidian 1.15.1, Electron 43.8.9). The three files are byte-identical copies.
+  `engine-probe-irisxe-lowbit.json` has focus losses on three native rows (CPU fp32 4, DirectML fp32 1, DirectML
+  q4f16 1), which inflated them by 5-13%; `-run2` has none and its WebGPU rows match run 1 within 2%. Native
+  DirectML still varies by about 10% between runs without focus losses (fp16: 108.7 vs 96.0 ms/document).

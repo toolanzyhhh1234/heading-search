@@ -1,0 +1,583 @@
+{
+  "createdAt": "2026-11-20T07:43:07.342Z",
+  "environment": {
+    "electron": "43.8.9",
+    "chrome": "150.0.7871.250",
+    "platform": "win32",
+    "cpu": "11th Gen Intel(R) Core(TM) i7-11390H @ 3.40GHz",
+    "logicalCPUs": 8,
+    "windowCrossOriginIsolated": false,
+    "documentFocused": true
+  },
+  "configs": [
+    {
+      "label": "native CPU fp32 (reference)",
+      "weights": "fp32",
+      "batch": "cpu",
+      "wallMs": 32158,
+      "focused": false,
+      "focusLosses": 4,
+      "ok": true,
+      "env": {},
+      "loadMs": 355.2,
+      "firstPassMsPerDoc": 249,
+      "msPerDoc": 117.2,
+      "queryMs": 8,
+      "finite": true,
+      "minCosineVsNativefp32": 0.999999957103615
+    },
+    {
+      "label": "native CPU int8 (shipped CPU path)",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 13072,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {},
+      "loadMs": 145.1,
+      "firstPassMsPerDoc": 65,
+      "msPerDoc": 62.7,
+      "queryMs": 4.7,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9888709301291544,
+      "minCosineVsNativeint8": 0.9999999573222338
+    },
+    {
+      "label": "native DirectML fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 24760,
+      "focused": false,
+      "focusLosses": 1,
+      "ok": true,
+      "env": {},
+      "loadMs": 257.3,
+      "firstPassMsPerDoc": 99.7,
+      "msPerDoc": 103.1,
+      "queryMs": 191.4,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9999999609322151,
+      "minCosineVsNativeint8": 0.988870920838401
+    },
+    {
+      "label": "native DirectML q4f16, standard batches (reference)",
+      "weights": "q4f16",
+      "batch": "standard",
+      "wallMs": 53778,
+      "focused": false,
+      "focusLosses": 1,
+      "ok": true,
+      "env": {},
+      "loadMs": 594.5,
+      "firstPassMsPerDoc": 289.7,
+      "msPerDoc": 207.5,
+      "queryMs": 340.8,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9910494351619492,
+      "minCosineVsNativeint8": 0.980314661026689,
+      "minCosineVsNativeq4f16": 0.9999999576001055
+    },
+    {
+      "label": "native DirectML fp16, standard batches (reference)",
+      "weights": "fp16",
+      "batch": "standard",
+      "wallMs": 22670,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {},
+      "loadMs": 207.3,
+      "firstPassMsPerDoc": 109.4,
+      "msPerDoc": 108.7,
+      "queryMs": 76.4,
+      "finite": true,
+      "minCosineVsNativefp32": 0.999997272107339,
+      "minCosineVsNativeint8": 0.9888414347089722,
+      "minCosineVsNativeq4f16": 0.9910393965975174,
+      "minCosineVsNativefp16": 0.9999999554766668
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 48177,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 711.1,
+      "firstPassMsPerDoc": 224.4,
+      "msPerDoc": 251.8,
+      "queryMs": 21.9,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9999999621071524,
+      "minCosineVsNativeint8": 0.988870929902204,
+      "minCosineVsNativeq4f16": 0.9910494413980132,
+      "minCosineVsNativefp16": 0.9999972894998976
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp16, standard batches",
+      "weights": "fp16",
+      "batch": "standard",
+      "wallMs": 11993,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 554.5,
+      "firstPassMsPerDoc": 75.3,
+      "msPerDoc": 43.3,
+      "queryMs": 27.5,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9999865595725645,
+      "minCosineVsNativeint8": 0.9888058628667148,
+      "minCosineVsNativeq4f16": 0.9910155838662141,
+      "minCosineVsNativefp16": 0.9999855149357967
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) q4, standard batches",
+      "weights": "q4",
+      "batch": "standard",
+      "wallMs": 9387,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 576.5,
+      "firstPassMsPerDoc": 48.5,
+      "msPerDoc": 39.6,
+      "queryMs": 17.2,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9910049963530836,
+      "minCosineVsNativeint8": 0.9803767524989815,
+      "minCosineVsNativeq4f16": 0.9997876833968168,
+      "minCosineVsNativefp16": 0.990996465671666
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) q4f16, standard batches",
+      "weights": "q4f16",
+      "batch": "standard",
+      "wallMs": 7705,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 569.4,
+      "firstPassMsPerDoc": 39.3,
+      "msPerDoc": 32,
+      "queryMs": 17.3,
+      "finite": true,
+      "minCosineVsNativefp32": 0.9909319059213559,
+      "minCosineVsNativeint8": 0.9808041618599113,
+      "minCosineVsNativeq4f16": 0.9998250969662704,
+      "minCosineVsNativefp16": 0.990924002344086
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, standard batches, kernel profile",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 38744,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 684.6999999880791,
+      "profile": {
+        "traceEvents": 22262,
+        "passMs": 18921,
+        "passMsPerDoc": 295.6,
+        "hostMsInKernels": 245,
+        "hostShareOfPass": 1.3,
+        "operators": {
+          "MatMul @ WebGpu": {
+            "hostMs": 56.6,
+            "share": 23.1,
+            "count": 1176
+          },
+          "Mul @ WebGpu": {
+            "hostMs": 36.9,
+            "share": 15,
+            "count": 854
+          },
+          "MultiHeadAttention @ WebGpu": {
+            "hostMs": 23.7,
+            "share": 9.7,
+            "count": 168
+          },
+          "Add @ WebGpu": {
+            "hostMs": 23.2,
+            "share": 9.5,
+            "count": 658
+          },
+          "Split @ WebGpu": {
+            "hostMs": 13.8,
+            "share": 5.7,
+            "count": 336
+          },
+          "Concat @ WebGpu": {
+            "hostMs": 13.2,
+            "share": 5.4,
+            "count": 336
+          },
+          "Neg @ WebGpu": {
+            "hostMs": 12.6,
+            "share": 5.1,
+            "count": 336
+          },
+          "LayerNormalization @ WebGpu": {
+            "hostMs": 11.5,
+            "share": 4.7,
+            "count": 336
+          },
+          "MemcpyFromHost @ WebGpu": {
+            "hostMs": 9.8,
+            "share": 4,
+            "count": 56
+          },
+          "Gelu @ WebGpu": {
+            "hostMs": 7.8,
+            "share": 3.2,
+            "count": 168
+          },
+          "Reshape @ WebGpu": {
+            "hostMs": 7.4,
+            "share": 3,
+            "count": 672
+          },
+          "Abs @ CPU": {
+            "hostMs": 5.4,
+            "share": 2.2,
+            "count": 14
+          },
+          "Sub @ CPU": {
+            "hostMs": 4.6,
+            "share": 1.9,
+            "count": 14
+          },
+          "Greater @ CPU": {
+            "hostMs": 3.5,
+            "share": 1.4,
+            "count": 14
+          },
+          "Slice @ WebGpu": {
+            "hostMs": 2.7,
+            "share": 1.1,
+            "count": 56
+          },
+          "Where @ WebGpu": {
+            "hostMs": 2.4,
+            "share": 1,
+            "count": 28
+          },
+          "Gather @ WebGpu": {
+            "hostMs": 2,
+            "share": 0.8,
+            "count": 28
+          },
+          "Expand @ WebGpu": {
+            "hostMs": 1.6,
+            "share": 0.7,
+            "count": 28
+          },
+          "Unsqueeze @ WebGpu": {
+            "hostMs": 1.1,
+            "share": 0.4,
+            "count": 84
+          },
+          "Unsqueeze @ CPU": {
+            "hostMs": 1,
+            "share": 0.4,
+            "count": 84
+          },
+          "Identity @ WebGpu": {
+            "hostMs": 0.8,
+            "share": 0.3,
+            "count": 14
+          },
+          "Tile @ WebGpu": {
+            "hostMs": 0.7,
+            "share": 0.3,
+            "count": 14
+          },
+          "SkipLayerNormalization @ WebGpu": {
+            "hostMs": 0.6,
+            "share": 0.2,
+            "count": 14
+          },
+          "Sub @ WebGpu": {
+            "hostMs": 0.6,
+            "share": 0.2,
+            "count": 14
+          },
+          "Shape @ CPU": {
+            "hostMs": 0.5,
+            "share": 0.2,
+            "count": 28
+          },
+          "Range @ CPU": {
+            "hostMs": 0.5,
+            "share": 0.2,
+            "count": 14
+          },
+          "Cast @ CPU": {
+            "hostMs": 0.4,
+            "share": 0.2,
+            "count": 28
+          },
+          "Concat @ CPU": {
+            "hostMs": 0.3,
+            "share": 0.1,
+            "count": 28
+          },
+          "Gather @ CPU": {
+            "hostMs": 0.1,
+            "share": 0,
+            "count": 42
+          }
+        },
+        "nonJson": []
+      }
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) q4f16, standard batches, kernel profile",
+      "weights": "q4f16",
+      "batch": "standard",
+      "wallMs": 6280,
+      "focused": true,
+      "focusLosses": 0,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": true,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "intel",
+          "architecture": "gen-12lp",
+          "description": "",
+          "shaderF16": true
+        },
+        "threadsUsed": 1
+      },
+      "loadMs": 606.0999999642372,
+      "profile": {
+        "traceEvents": 24872,
+        "passMs": 2144,
+        "passMsPerDoc": 33.5,
+        "hostMsInKernels": 191,
+        "hostShareOfPass": 8.9,
+        "operators": {
+          "MatMulNBits @ WebGpu": {
+            "hostMs": 66.7,
+            "share": 35,
+            "count": 1092
+          },
+          "Mul @ WebGpu": {
+            "hostMs": 20.3,
+            "share": 10.7,
+            "count": 793
+          },
+          "Add @ WebGpu": {
+            "hostMs": 17.2,
+            "share": 9,
+            "count": 611
+          },
+          "MultiHeadAttention @ WebGpu": {
+            "hostMs": 10.9,
+            "share": 5.7,
+            "count": 156
+          },
+          "Concat @ WebGpu": {
+            "hostMs": 10.2,
+            "share": 5.3,
+            "count": 312
+          },
+          "Split @ WebGpu": {
+            "hostMs": 10.1,
+            "share": 5.3,
+            "count": 312
+          },
+          "LayerNormalization @ WebGpu": {
+            "hostMs": 8.5,
+            "share": 4.4,
+            "count": 312
+          },
+          "MemcpyFromHost @ WebGpu": {
+            "hostMs": 8.2,
+            "share": 4.3,
+            "count": 52
+          },
+          "Neg @ WebGpu": {
+            "hostMs": 7.1,
+            "share": 3.7,
+            "count": 312
+          },
+          "Reshape @ WebGpu": {
+            "hostMs": 6.2,
+            "share": 3.2,
+            "count": 624
+          },
+          "Greater @ CPU": {
+            "hostMs": 3.5,
+            "share": 1.8,
+            "count": 13
+          },
+          "Gelu @ WebGpu": {
+            "hostMs": 3.5,
+            "share": 1.8,
+            "count": 156
+          },
+          "Abs @ CPU": {
+            "hostMs": 3.1,
+            "share": 1.6,
+            "count": 13
+          },
+          "Sub @ CPU": {
+            "hostMs": 2.9,
+            "share": 1.5,
+            "count": 13
+          },
+          "Where @ WebGpu": {
+            "hostMs": 2.2,
+            "share": 1.2,
+            "count": 26
+          },
+          "Slice @ WebGpu": {
+            "hostMs": 1.9,
+            "share": 1,
+            "count": 52
+          },
+          "Gather @ WebGpu": {
+            "hostMs": 1.6,
+            "share": 0.8,
+            "count": 26
+          },
+          "Unsqueeze @ WebGpu": {
+            "hostMs": 1.2,
+            "share": 0.6,
+            "count": 78
+          },
+          "Expand @ WebGpu": {
+            "hostMs": 0.9,
+            "share": 0.5,
+            "count": 26
+          },
+          "Cast @ WebGpu": {
+            "hostMs": 0.8,
+            "share": 0.4,
+            "count": 26
+          },
+          "Tile @ WebGpu": {
+            "hostMs": 0.8,
+            "share": 0.4,
+            "count": 13
+          },
+          "Cast @ CPU": {
+            "hostMs": 0.7,
+            "share": 0.4,
+            "count": 26
+          },
+          "Unsqueeze @ CPU": {
+            "hostMs": 0.5,
+            "share": 0.3,
+            "count": 78
+          },
+          "Shape @ CPU": {
+            "hostMs": 0.5,
+            "share": 0.3,
+            "count": 26
+          },
+          "Concat @ CPU": {
+            "hostMs": 0.5,
+            "share": 0.3,
+            "count": 26
+          },
+          "Sub @ WebGpu": {
+            "hostMs": 0.5,
+            "share": 0.3,
+            "count": 13
+          },
+          "SkipLayerNormalization @ WebGpu": {
+            "hostMs": 0.3,
+            "share": 0.2,
+            "count": 13
+          },
+          "Gather @ CPU": {
+            "hostMs": 0.1,
+            "share": 0.1,
+            "count": 39
+          },
+          "Range @ CPU": {
+            "hostMs": 0,
+            "share": 0,
+            "count": 13
+          }
+        },
+        "nonJson": []
+      }
+    }
+  ],
+  "suite": "lowbit",
+  "done": true
+}
