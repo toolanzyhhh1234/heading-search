@@ -45,10 +45,7 @@ notice says the probe finished. Results: `.test-vault/probe/.obsidian/plugins/he
 
 ## Current task
 
-Commit the Iris Xe probe results from before this branch was shared, if they are still in the old working directory
-(outside the repo): `engine-probe-irisxe-electron43.json`, `engine-probe-irisxe-lowbit.json`, and
-`engine-probe-irisxe-lowbit-run2.json`. Copy them unchanged into `benchmarks/results/`, commit
-("Add the Iris Xe engine probe results"), and push. Nothing needs to run.
+None. Wait for the desktop session to update this section.
 
 ## Results log
 
