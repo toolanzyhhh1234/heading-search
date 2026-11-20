@@ -45,7 +45,26 @@ notice says the probe finished. Results: `.test-vault/probe/.obsidian/plugins/he
 
 ## Current task
 
-None. Wait for the desktop session to update this section.
+Time the plugin's new built-in GPU engine (WebGPU, fp16 weights) on this laptop, on the same notes as the desktop.
+The person at the laptop does the Obsidian clicks; you prepare, watch files, and record.
+
+1. `git pull`, then `npm ci` (new dependency: onnxruntime-web), `npm run build`,
+   `node scripts/make-benchmark-vault.mjs --dataset scifact` (5,183 notes in `.test-vault/scifact`), and
+   `npm run deploy:test-vault`.
+2. Record the current `~/.cache/heading-search/runtime/device.json` if it exists (an earlier native setup), and list the
+   files under `~/.cache/heading-search/models/`. Setup may replace both.
+3. Laptop on AC power. Ask the person to open `.test-vault/scifact` as a vault in Obsidian (trust the plugin), then
+   Settings > Heading Search > **Enable semantic search** (or **Use shared model** / **Check / repair**, whichever shows),
+   and keep the window focused until the index status reads `8499 sections ready · 8499 embedded (… new in … s)`.
+   Expect about 4–6 minutes for indexing, after a 97 MB download if the fp16 weights are not there yet.
+4. Ask for the setup message (it names the engine, adapter, and the 12-section time) and the final status line.
+   Copy the new `device.json` to `benchmarks/results/plugin-irisxe-device.json`.
+5. Ask for two searches in Hybrid mode, for example "vitamin D and bone fractures" and "how do statins affect muscle",
+   and whether the top results look relevant.
+6. Add a Results log entry: setup message, the embedded count and seconds, ms per section, the old and new device
+   choice, what was downloaded or removed, and anything unusual (focus losses, errors). Commit and push.
+
+Desktop reference (RTX 3070): WebGPU chosen, 12 probe sections in 81 ms, 8,499 sections in about 65 s.
 
 ## Results log
 

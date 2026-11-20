@@ -43,7 +43,11 @@ The [developer policies](https://docs.obsidian.md/community-directory/developer-
   - It is not simply memory traffic: q4 keeps fp32 activations and reads about 1/8 of fp32's matrix weights, yet is barely faster than fp16 (40.5 vs 43.2). The fp32 WebGPU path itself is slow on this GPU (5x fp16, against 1.15x on the 3070).
 - [x] **Conclusion: a bundled WebGPU engine beats the native download on both measured computers** when it runs low-bit weights. fp16 is the candidate: quality equals fp32 (cosine 0.99999, so fp32 indexes stay valid), 93 MB of weights, 8.7 ms/document on the 3070 (DirectML 11.9) and 43 on Iris Xe (native CPU int8 65). q4f16 is faster on Iris Xe (32) and smaller (54 MB), but costs −0.005 dense nDCG@10 on NFCorpus and is a second set of vectors; keep it as a later option.
 - [ ] Measure a Mac, and whether WebGPU indexing slows when Obsidian is in the background.
-- [ ] Prototype a bundled backend: JSPI WebGPU with fp16 weights for documents and queries, chosen at setup like the DirectML calibration. Decide what computers without a usable adapter get (single-thread CPU WASM was 326–481 ms/document).
+- [x] **Built-in engine in the plugin** (`src/embedding/web-worker.ts`, `web-runtime.ts`; `main.js` 1.0 → 4.9 MB). Setup tries it first when the GPU is allowed: JSPI and a hardware adapter, then the fp16 weights (97 MB), then a test (finite vectors, 12 timed probe sections). Otherwise the native engine is set up as before and the reason is recorded. fp16 indexes count as fp32 (`vectorWeights`), so DirectML indexes stay valid. Calibration version 3 offers it at the next Check / repair.
+  - RTX 3070 desktop, first-time setup in Obsidian: chose WebGPU (probe sections 81 ms), downloaded only the fp16 weights; INFO20003 vault 1,085 sections in about 9 s; `.test-vault/scifact` (5,183 notes, `scripts/make-benchmark-vault.mjs`) 8,499 sections in about 65 s (7.6 ms/section, including the 10 ms yield between batches).
+- [ ] **Iris Xe in the plugin**: the same SciFact vault through first-time setup or Check / repair (task in [laptop.md](laptop.md)).
+- [ ] Decide what computers without a usable adapter, and old installers, get: today they fall back to the native download, which the directory policy rules out. Single-thread CPU WASM was 326–481 ms/document.
+- [ ] Before release: README and `docs/publishing.md` (network use: only Hugging Face weights when the built-in engine runs), and whether to keep the native engine at all.
 
 ## Next
 
