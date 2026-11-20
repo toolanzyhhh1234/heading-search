@@ -97,11 +97,13 @@ export class SearchService {
     if(this.embeddedWith!==this.weights()) {this.rows.clear();this.embeddedWith=this.weights();}
     // Keep keyword search recoverable even if model startup fails or takes a long time.
     this.repack(settings);await this.save(settings);
+    // How long this run's new embeddings took, shown with the final status: users see what indexing costs.
+    let embedded=0,lastRun="";
     if(settings.semanticEnabled) {
       const missing=[...this.chunks.values()].filter(chunk=>!this.rows.has(chunk.id));
       if(missing.length) {this.update("Starting the embedding engine…");await this.embedding.initialize();}
       // Batch size follows the engine: small enough that interactive searches do not wait long behind indexing.
-      const size=this.embedding.batchTexts;
+      const size=this.embedding.batchTexts,started=performance.now();
       let saved=0;
       for(let i=0;i<missing.length;i+=size) {
         if(this.closed || this.paused || serial!==this.requested || !this.settings().semanticEnabled || this.embeddedWith!==this.weights())break;
@@ -113,11 +115,13 @@ export class SearchService {
         // Yield between small batches so interactive search can enter the worker queue.
         await new Promise(resolve=>setTimeout(resolve,10));
         if(i-saved>=200) {saved=i;this.repack(settings);await this.save(settings);}
+        embedded+=batch.length;
       }
+      if(embedded)lastRun=` (${embedded} new in ${((performance.now()-started)/1000).toFixed(1)} s)`;
     }
     if(this.closed)return;
     this.repack(settings);await this.save(settings);
-    this.update(this.paused ? "Indexing paused" : `${this.chunks.size} sections ready${settings.semanticEnabled ? ` · ${this.rows.size} embedded` : " · BM25"}`);
+    this.update(this.paused ? "Indexing paused" : `${this.chunks.size} sections ready${settings.semanticEnabled ? ` · ${this.rows.size} embedded${lastRun}` : " · BM25"}`);
   }
 
   private repack(settings:Settings):void {
