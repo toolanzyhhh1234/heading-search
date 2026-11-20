@@ -46,6 +46,42 @@
       ],
       "sha256": "a3fad524afc3f060216a8ddbb1ac89c9b6498fba8995b5718bde879076a2e9ba",
       "bytes": 598902
+    },
+    "fp16": {
+      "path": "onnx/model_fp16.onnx",
+      "extra": [
+        {
+          "path": "onnx/model_fp16.onnx_data",
+          "sha256": "28d16e29cd623f25cc6fa0968700c5bc31036466091a5fa06d1353c1777f050e",
+          "bytes": 97402880
+        }
+      ],
+      "sha256": "ee200de55cb2f94e858aabca54be7697a9c0805a14c858ee26ad0922b05f57d7",
+      "bytes": 200792
+    },
+    "q4": {
+      "path": "onnx/model_q4.onnx",
+      "extra": [
+        {
+          "path": "onnx/model_q4.onnx_data",
+          "sha256": "ac9b1830d3204072803f706581573752f3b80bf4e08e7ff323a7091636cbeaaa",
+          "bytes": 99292672
+        }
+      ],
+      "sha256": "3a27c53213858379e4938858d8c72711f3792dd2c00cf1bd08cd65d23b8b36ae",
+      "bytes": 212629
+    },
+    "q4f16": {
+      "path": "onnx/model_q4f16.onnx",
+      "extra": [
+        {
+          "path": "onnx/model_q4f16.onnx_data",
+          "sha256": "c4491d4a168f9e92dc7e4a99144bfba8a1d29ff628a4ae8a88bf0a3f439a8cf0",
+          "bytes": 56705024
+        }
+      ],
+      "sha256": "891c487fb1980069dc50d9d554d19cab95e25635b7c868b98beefd7c8c5f8e41",
+      "bytes": 231035
     }
   }
 }

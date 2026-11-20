@@ -1,5 +1,5 @@
 // Full-corpus encoding with the shipping native engine (batched, DirectML or multi-threaded CPU).
-// Usage: node scripts/embed-benchmarks-native.mjs --weights int8|fp32 --runtime <dir containing node_modules/onnxruntime-node> [--device directml|native-cpu] [--model <spec.json>] [--gpu-batch standard|large]
+// Usage: node scripts/embed-benchmarks-native.mjs --weights int8|fp32|<variant> [--gpu-queries] --runtime <dir containing node_modules/onnxruntime-node> [--device directml|native-cpu] [--model <spec.json>] [--gpu-batch standard|large]
 // --model defaults to the shipped src/model-spec.json; candidate specs live in benchmarks/models/ (see scripts/pin-model.mjs).
 // The device defaults to the one the plugin pairs with the weights: DirectML for fp32, CPU for int8.
 import { build } from 'esbuild';
@@ -33,6 +33,10 @@ const {engine,info}=await openNative({runtimeDirectory:runtime.replaceAll('\\','
   threads,device:arg('device')??(weights==='fp32'?'directml':'native-cpu'),
   model:{dimensions:spec.dimensions,maxTokens:spec.maxTokens,pooling:spec.pooling,queryPrefix:spec.queryPrefix,documentPrefix:spec.documentPrefix??''}});
 console.log(`Engine: ${info.label}, ${spec.id} ${weights} weights → profile ${profile}`);
+// Next to DirectML the plugin embeds queries on the CPU. --gpu-queries keeps them on DirectML: onnxruntime-node's CPU
+// q4f16 kernel overflows to NaN, while DirectML's is finite. The engine still applies the query prefix.
+const queryEngine=process.argv.includes('--gpu-queries') ? (engine.documents ?? engine) : engine;
+if(process.argv.includes('--gpu-queries')) console.log(queryEngine===engine ? 'No GPU engine is open: queries use the same engine.' : 'Queries run on DirectML (--gpu-queries).');
 try {
   for(const dataset of ['scifact','nfcorpus']) {
     const base=`benchmarks/data/${dataset}`;
@@ -46,7 +50,7 @@ try {
       try {if((await stat(destination)).size===texts.length*spec.dimensions*4){console.log(`${dataset}-${kind}: cached`);continue;}}catch{}
       const all=new Float32Array(texts.length*spec.dimensions),before=performance.now(),step=256;
       for(let i=0;i<texts.length;i+=step) {
-        const vectors=await engine.embed(texts.slice(i,i+step),query);
+        const vectors=await (query ? queryEngine : engine).embed(texts.slice(i,i+step),query);
         vectors.forEach((vector,j)=>all.set(vector,(i+j)*spec.dimensions));
         if((i/step)%4===3)console.log(`${dataset}-${kind}: ${Math.min(i+step,texts.length)}/${texts.length}, ${((performance.now()-before)/1000).toFixed(1)}s`);
       }

@@ -2,15 +2,32 @@
 // native engine inside Obsidian, on the same texts, and checks that the vectors agree. Built by scripts/engine-probe/build.mjs.
 import { Notice, Plugin } from "obsidian";
 
-interface Probe {repo:string;runtimeDirectory:string;ortWeb:string;modelDirectory:string;docs:string[];queries:string[];model:object;
+interface Probe {suite?:"engines"|"lowbit";runtimeDirectory:string;ortWeb:string;modelDirectory:string;docs:string[];queries:string[];model:object;
   weights:Record<string,{path:string;external:string;gpu?:string}>}
-interface Config {label:string;engine:"native"|"web";worker:string;weights:"int8"|"fp32";graph?:"upstream"|"gpu";device?:string;
-  ep?:string;wasm?:string;threads:number;batch:"cpu"|"standard"|"large"}
+type Weights="int8"|"fp32"|"fp16"|"q4"|"q4f16";
+interface Config {label:string;engine:"native"|"web";worker:string;weights:Weights;graph?:"upstream"|"gpu";device?:string;
+  ep?:string;wasm?:string;threads:number;batch:"cpu"|"standard"|"large";
+  /** One extra pass with onnxruntime-web's per-kernel GPU timing, summed by operator type. */
+  profile?:boolean}
 const BATCHES={cpu:{limits:{tokens:512,rows:1},chunk:16},standard:{limits:{tokens:2048,rows:8,fixedShapes:true},chunk:16},
   large:{limits:{tokens:16384,rows:64,fixedShapes:true},chunk:64}};
 const WASM={plain:"ort-wasm-simd-threaded.wasm",jsep:"ort-wasm-simd-threaded.jsep.wasm",asyncify:"ort-wasm-simd-threaded.asyncify.wasm",jspi:"ort-wasm-simd-threaded.jspi.wasm"};
 const threads=Math.min(4,Math.max(1,navigator.hardwareConcurrency-1));
-const CONFIGS:Config[]=[
+const jspi=(weights:Weights,profile=false):Config=>({label:`web WebGPU (native EP, JSPI) ${weights}, standard batches${profile?", kernel profile":""}`,
+  engine:"web",worker:"jspi",weights,graph:"upstream",ep:"webgpu",wasm:WASM.jspi,threads:1,batch:"standard",profile});
+/**
+ * Integrated graphics (Iris Xe) ran fp32 WebGPU 3x slower than DirectML: do smaller weights close the gap, and where
+ * does the time go? Native DirectML rows of each low-bit variant are the vector references for the WebGPU rows.
+ */
+const LOWBIT:Config[]=[
+  {label:"native CPU fp32 (reference)",engine:"native",worker:"native",weights:"fp32",device:"cpu",threads,batch:"cpu"},
+  {label:"native CPU int8 (shipped CPU path)",engine:"native",worker:"native",weights:"int8",device:"cpu",threads,batch:"cpu"},
+  {label:"native DirectML fp32, standard batches",engine:"native",worker:"native",weights:"fp32",graph:"gpu",device:"dml",threads,batch:"standard"},
+  {label:"native DirectML q4f16, standard batches (reference)",engine:"native",worker:"native",weights:"q4f16",device:"dml",threads,batch:"standard"},
+  {label:"native DirectML fp16, standard batches (reference)",engine:"native",worker:"native",weights:"fp16",device:"dml",threads,batch:"standard"},
+  jspi("fp32"),jspi("fp16"),jspi("q4"),jspi("q4f16"),jspi("fp32",true),jspi("q4f16",true),
+];
+const ENGINES:Config[]=[
   {label:"native CPU fp32 (reference)",engine:"native",worker:"native",weights:"fp32",device:"cpu",threads,batch:"cpu"},
   {label:"native CPU int8 (shipped CPU path)",engine:"native",worker:"native",weights:"int8",device:"cpu",threads,batch:"cpu"},
   {label:"native DirectML fp32, standard batches",engine:"native",worker:"native",weights:"fp32",graph:"gpu",device:"dml",threads,batch:"standard"},
@@ -50,6 +67,8 @@ export default class EngineProbe extends Plugin {
     const tokenizer=JSON.parse(fs.readFileSync(path.join(probe.modelDirectory,"tokenizer.json"),"utf8"));
     const config=JSON.parse(fs.readFileSync(path.join(probe.modelDirectory,"tokenizer_config.json"),"utf8"));
     const references:Record<string,Float32Array[]>={};
+    const CONFIGS=probe.suite==="lowbit" ? LOWBIT : ENGINES;
+    (results as {suite?:string}).suite=probe.suite??"engines";
     const notice=new Notice("Engine probe: starting. Keep this window focused.",0);
     try {
       for(const [index,c] of CONFIGS.entries()) {
@@ -65,7 +84,7 @@ export default class EngineProbe extends Plugin {
         const modelFile=path.join(probe.modelDirectory,c.graph==="gpu" && w.gpu ? w.gpu : w.path);
         const message:Record<string,unknown>=c.engine==="native"
           ? {job,runtimeDirectory:probe.runtimeDirectory,modelPath:modelFile,device:c.device,threads:c.threads}
-          : {job,threads:c.threads,ep:c.ep,externalName:path.basename(w.external),wasm:bytes(path.join(probe.ortWeb,c.wasm!)),
+          : {job,threads:c.threads,ep:c.ep,profile:c.profile===true,externalName:path.basename(w.external),wasm:bytes(path.join(probe.ortWeb,c.wasm!)),
             model:bytes(modelFile),external:bytes(path.join(probe.modelDirectory,w.external))};
         const started=performance.now();
         // Windows throttles an unfocused window, so count every focus loss during the step, not just the state at the end.
@@ -80,8 +99,11 @@ export default class EngineProbe extends Plugin {
         const vectors=reply.vectors as Float32Array[]|undefined;
         delete row.vectors;
         if(vectors) {
-          if(c.label.startsWith("native CPU")) references[c.weights]=vectors;
+          // The first native row of each weight variant is its reference (fp16 and q4f16 have only DirectML rows).
+          if(c.engine==="native" && !references[c.weights] && vectors.every(v=>v.every(Number.isFinite))) references[c.weights]=vectors;
           const dot=(a:Float32Array,b:Float32Array)=>a.reduce((s,v,i)=>s+v*b[i],0);
+          // Half-precision activations overflowed to NaN in onnxruntime-node's CPU q4f16 kernel; check every vector.
+          row.finite=vectors.every(v=>v.every(Number.isFinite));
           for(const [weights,reference] of Object.entries(references))
             row[`minCosineVsNative${weights}`]=Math.min(...vectors.map((v,i)=>dot(v,reference[i])));
           for(const key of ["firstPassMsPerDoc","msPerDoc","queryMs","loadMs"]) row[key]=Math.round((row[key] as number)*10)/10;

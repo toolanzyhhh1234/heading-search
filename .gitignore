@@ -15,6 +15,9 @@ benchmarks/results/*.json
 !benchmarks/results/summary-native-fp16.json
 !benchmarks/results/engines.json
 !benchmarks/results/summary-granite-*-fp32.json
+!benchmarks/results/summary-granite-small-r2-fp16.json
+!benchmarks/results/summary-granite-small-r2-q4.json
+!benchmarks/results/summary-granite-small-r2-q4f16.json
 !benchmarks/results/models.json
 !benchmarks/results/rerank.json
 !benchmarks/results/gpu-rtx3070.json
