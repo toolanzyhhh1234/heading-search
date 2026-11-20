@@ -23,9 +23,15 @@ The [developer policies](https://docs.obsidian.md/community-directory/developer-
 - [x] **onnxruntime-web 1.31.1 runs Granite** (1.17.3 could not). fp32 vectors are identical to native (cosine 1.000000 in Node); int8 differs slightly (0.997), so int8 indexes are not interchangeable between engines.
 - [x] **CPU WebAssembly works but is slow**: 326 ms/document on one thread, against 37 for native int8 and 12 for DirectML; queries 20 ms (fine). Obsidian is not cross-origin isolated, and threaded WASM **hangs** there instead of falling back (SharedArrayBuffer exists), so only one thread is usable. The probe now skips it.
 - [x] **WebGPU failed on Electron 34** with every build: JSEP stops at `[Mul] .../k_rotary/term2_mul` ("Can't perform binary op on the given tensors"); the native WebGPU EP (asyncify) fails to compile a shader with D3D (`X3663`, barrier in varying flow control); JSPI is not available. The adapter was found (NVIDIA Ampere, no shader-f16).
-- [ ] **Re-run on a current installer.** Electron is fixed by the installer, not by in-app updates; the current installer ships Electron 43. Reinstall Obsidian from obsidian.md (vaults and settings are kept), rebuild with `node scripts/engine-probe/build.mjs`, reload the test vault focused.
-- [ ] If the native WebGPU EP works on Electron 43: measure the bundle cost (asyncify WASM is 28.7 MB raw; compressed in `main.js`), first-pass shader compilation, and the Iris Xe laptop. Old installers would still need the CPU WASM path or the native download.
-- [ ] If JSEP is still needed: the rotary `Mul` may be patchable in the GPU graph, as `Gelu` was for DirectML.
+- [x] **Re-run on the current installer** (`benchmarks/results/engine-probe-3070-electron43.json`: Obsidian 1.15.1 on the current installer = Electron 43.8.9 / Chromium 150, same desktop). Electron is fixed by the installer, not by in-app updates.
+  - **The native WebGPU EP works and beats DirectML:** JSPI build 9.5 ms/document (first pass 11.1, including shader compilation), asyncify build 9.4 (first pass 22.4), against 11.9 for native DirectML with large batches. Standard batches (16 per call) beat large ones on WebGPU (12.1). Vectors are identical to native fp32 (cosine 1.000000), so existing DirectML indexes stay valid.
+  - **Queries run well on the GPU:** 8.8 ms, against 40.6 for a DirectML query (which is why DirectML sends queries to the CPU).
+  - JSPI is available (not on Electron 34); the adapter now reports shader-f16. JSEP still fails on the rotary `Mul`. CPU WASM is unchanged (336 ms/document, one thread).
+  - Two native rows (CPU fp32 reference, DirectML standard) had focus losses during the step; their timings may be slightly high.
+- [x] **Bundle cost**, Brotli-compressed and base64-encoded in `main.js` (Obsidian's Node `zlib` decompresses Brotli): JSPI WASM 17.9 MB raw → 3.8 MB; plain CPU WASM 14.8 → 3.3; asyncify 28.7 → 5.8. Today's `main.js` is 1.0 MB.
+- [ ] **Decide old installers** (no JSPI, WebGPU shader failures on Electron 34): plain CPU WASM (+3.3 MB, about 28x slower than DirectML to index), keyword search with a prompt to update the installer, or the native download as a manual opt-in.
+- [ ] **Measure the Iris Xe laptop and a Mac** with the probe before switching: integrated graphics, Metal, and whether WebGPU indexing slows when Obsidian is in the background.
+- [ ] Prototype a bundled backend: JSPI WebGPU fp32 for documents and queries, CPU WASM when there is no usable adapter, chosen at setup like the DirectML calibration.
 
 ## Next
 
