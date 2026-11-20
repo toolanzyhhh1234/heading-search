@@ -23,6 +23,9 @@ node scripts/benchmark.mjs   # summary.json: the shipped model with int8 weights
 node scripts/embed-benchmarks-native.mjs --weights fp32 --runtime <dir>
 node scripts/benchmark.mjs --embeddings granite-small-r2-fp32 --out summary-granite-small-r2-fp32.json
 node scripts/benchmark-engines.mjs --runtime <dir>
+# Optional: Omnisearch and the built-in search, with Omnisearch's own libraries kept out of package.json
+npm install --prefix .cache/omnisearch-bench --ignore-scripts --no-save minisearch@7.1.0 search-query-parser@1.6.0 markdown-link-extractor@4.0.4
+node scripts/benchmark-omnisearch.mjs   # uses the fp32 embedding cache; --embeddings granite-small-r2-int8 for int8
 node scripts/report-benchmark.mjs
 ```
 

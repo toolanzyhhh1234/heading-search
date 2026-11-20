@@ -73,6 +73,21 @@ No reranker is included. Small cross-encoders (Ettin 17M–68M) reranking the to
 
 Vector retrieval currently uses an exact scan. Query time grows with the number of indexed sections. Initial embedding of a large vault can take minutes; keyword search stays available while it runs.
 
+## How it relates to Omnisearch
+
+[Omnisearch](https://github.com/scambier/obsidian-omnisearch) is an excellent search-as-you-type tool for finding notes. It works on mobile, indexes PDFs and images, tolerates typos, and needs no model download. Heading Search was built to fill a different gap: asking a question in your own words and landing on the section that answers it.
+
+That difference shows on long natural-language queries. On two public benchmark collections of scientific abstracts, using Omnisearch's search reproduced from its source with default settings (nDCG@10):
+
+| | SciFact (full-sentence claims) | NFCorpus (short topics) |
+| --- | ---: | ---: |
+| Obsidian built-in search | 0.007 | 0.161 |
+| Omnisearch | 0.127 | 0.203 |
+| Heading Search, keyword | 0.690 | 0.330 |
+| Heading Search, hybrid | 0.745 | 0.376 |
+
+Most of the gap comes from a deliberate design choice: Omnisearch, like Obsidian's built-in search, returns only notes containing every query word. That keeps results precise when you type two or three words, but long questions often return nothing; 67% of SciFact queries do. With any word allowed to match, Omnisearch's ranking scores 0.536 and 0.282. These collections have no headings, so this compares whole-note ranking only, not section search. See [the comparison](benchmarks/RESULTS.md#omnisearch-and-the-built-in-search) for method and confidence intervals.
+
 ## Privacy and network use
 
 - No telemetry or analytics. Notes and queries are not uploaded.

@@ -11,6 +11,7 @@
     "test": "node scripts/test.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "package": "npm run build && node scripts/package.mjs",
+    "deploy:test-vault": "npm run build && node scripts/deploy-test-vault.mjs",
     "test:runtime": "node scripts/runtime-smoke.mjs",
     "benchmark:engines": "node scripts/benchmark-engines.mjs",
     "pin-runtime": "node scripts/pin-runtime.mjs"
