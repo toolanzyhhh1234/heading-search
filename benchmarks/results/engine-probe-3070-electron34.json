@@ -1,0 +1,234 @@
+{
+  "createdAt": "2026-11-20T04:16:38.977Z",
+  "environment": {
+    "electron": "34.2.0",
+    "chrome": "132.0.6834.196",
+    "platform": "win32",
+    "cpu": "12th Gen Intel(R) Core(TM) i5-12600KF",
+    "logicalCPUs": 16,
+    "windowCrossOriginIsolated": false,
+    "documentFocused": true
+  },
+  "configs": [
+    {
+      "label": "native CPU fp32 (reference)",
+      "weights": "fp32",
+      "batch": "cpu",
+      "wallMs": 13399,
+      "focused": true,
+      "ok": true,
+      "env": {},
+      "loadMs": 366.2,
+      "firstPassMsPerDoc": 69.4,
+      "msPerDoc": 63.4,
+      "queryMs": 7.2,
+      "minCosineVsNativefp32": 0.9999999555292
+    },
+    {
+      "label": "native CPU int8 (shipped CPU path)",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 7516,
+      "focused": true,
+      "ok": true,
+      "env": {},
+      "loadMs": 134.6,
+      "firstPassMsPerDoc": 37.7,
+      "msPerDoc": 36.7,
+      "queryMs": 3.9,
+      "minCosineVsNativefp32": 0.9884648578791184,
+      "minCosineVsNativeint8": 0.9999999589909446
+    },
+    {
+      "label": "native DirectML fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 5263,
+      "focused": true,
+      "ok": true,
+      "env": {},
+      "loadMs": 457,
+      "firstPassMsPerDoc": 27.2,
+      "msPerDoc": 15.5,
+      "queryMs": 43.1,
+      "minCosineVsNativefp32": 0.999999954931486,
+      "minCosineVsNativeint8": 0.9884648157306597
+    },
+    {
+      "label": "native DirectML fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 3861,
+      "focused": true,
+      "ok": true,
+      "env": {},
+      "loadMs": 369.9,
+      "firstPassMsPerDoc": 17.2,
+      "msPerDoc": 12,
+      "queryMs": 37.8,
+      "minCosineVsNativefp32": 0.999999954931486,
+      "minCosineVsNativeint8": 0.9884648157306597
+    },
+    {
+      "label": "web WASM int8, 1 thread",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 75271,
+      "focused": true,
+      "ok": true,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "threadsUsed": 1
+      },
+      "loadMs": 257.4,
+      "firstPassMsPerDoc": 329.6,
+      "msPerDoc": 325.6,
+      "queryMs": 20,
+      "minCosineVsNativefp32": 0.9890230695210036,
+      "minCosineVsNativeint8": 0.9972910771922686
+    },
+    {
+      "label": "web WASM int8, 4 threads",
+      "weights": "int8",
+      "batch": "cpu",
+      "wallMs": 600010,
+      "focused": true,
+      "ok": false,
+      "error": "timed out after 10 minutes"
+    },
+    {
+      "label": "web WebGPU (JSEP, ort.bundle) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 1142,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        },
+        "threadsUsed": 1
+      },
+      "error": "[WebGPU] Kernel \"[Mul] /model/layers.0/attn/k_rotary/term2_mul\" failed. Error: Can't perform binary op on the given tensors"
+    },
+    {
+      "label": "web WebGPU (JSEP, ort.bundle) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 1240,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        },
+        "threadsUsed": 1
+      },
+      "error": "[WebGPU] Kernel \"[Mul] /model/layers.0/attn/k_rotary/term2_mul\" failed. Error: Can't perform binary op on the given tensors"
+    },
+    {
+      "label": "web WebGPU (native EP, asyncify) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 4132,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        },
+        "threadsUsed": 1
+      },
+      "error": "failed to call OrtRun(). ERROR_CODE: 1, ERROR_MESSAGE: /mnt/azure_nvme_temp/_work/1/s/onnxruntime/core/providers/webgpu/buffer_manager.cc:571 WGPUBuffer onnxruntime::webgpu::BufferManager::Create(CommandRecordingState &, size_t, wgpu::BufferUsage, bool, bool) const [ONNXRuntimeError] : 1 : FAIL : Failed to create a WebGPU compute pipeline: D3D compile failed with: C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC02279000(225,7-39): error X3663: thread sync operation found in varying flow control, consider reformulating your algorithm so all threads will hit the sync simultaneously | C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC02279000(390,3-170): error X3663: this variable dependent on potentially varying data: tint_symbol_99 | C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC02279000(118,10-29): error X3663: this variable dependent on potentially varying data: tint_symbol_55"
+    },
+    {
+      "label": "web WebGPU (native EP, asyncify) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 4173,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        },
+        "threadsUsed": 1
+      },
+      "error": "failed to call OrtRun(). ERROR_CODE: 1, ERROR_MESSAGE: /mnt/azure_nvme_temp/_work/1/s/onnxruntime/core/providers/webgpu/buffer_manager.cc:571 WGPUBuffer onnxruntime::webgpu::BufferManager::Create(CommandRecordingState &, size_t, wgpu::BufferUsage, bool, bool) const [ONNXRuntimeError] : 1 : FAIL : Failed to create a WebGPU compute pipeline: D3D compile failed with: C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC0227E000(225,7-39): error X3663: thread sync operation found in varying flow control, consider reformulating your algorithm so all threads will hit the sync simultaneously | C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC0227E000(390,3-170): error X3663: this variable dependent on potentially varying data: tint_symbol_99 | C:\\Users\\admin\\AppData\\Local\\Programs\\Obsidian\\Shader@0x000010DC0227E000(118,10-29): error X3663: this variable dependent on potentially varying data: tint_symbol_55"
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, standard batches",
+      "weights": "fp32",
+      "batch": "standard",
+      "wallMs": 157,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        }
+      },
+      "error": "no available backend found. ERR: [webgpu] Error: WebAssembly JSPI is not supported in the current environment."
+    },
+    {
+      "label": "web WebGPU (native EP, JSPI) fp32, large batches",
+      "weights": "fp32",
+      "batch": "large",
+      "wallMs": 159,
+      "focused": true,
+      "ok": false,
+      "env": {
+        "crossOriginIsolated": false,
+        "sharedArrayBuffer": true,
+        "jspi": false,
+        "webgpu": true,
+        "adapter": {
+          "vendor": "nvidia",
+          "architecture": "ampere",
+          "description": "",
+          "shaderF16": false
+        }
+      },
+      "error": "no available backend found. ERR: [webgpu] Error: WebAssembly JSPI is not supported in the current environment."
+    }
+  ],
+  "done": true
+}

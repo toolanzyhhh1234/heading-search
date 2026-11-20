@@ -16,6 +16,17 @@ See [DirectML on a discrete GPU](../benchmarks/RESULTS.md#directml-on-a-discrete
 - [x] **Larger model: no.** Granite English r2 (149M) reproduces its scores on the 3070 but gains only +0.003 to +0.010 nDCG@10 over the shipped model, with every paired interval including zero, at 3x the download, 2x the vector size, no int8 weights, and about 2.4x slower indexing.
 - [x] `prepare-benchmarks.py` no longer pins a model (it still hardcoded bge-small and would have overwritten `src/model-spec.json`); `pin-model.mjs` does, and installs bundled GPU graphs.
 
+## In progress: an engine bundled in main.js, for directory review (2026-11-20)
+
+The [developer policies](https://docs.obsidian.md/community-directory/developer-policies) say plugins must not "install or update themselves or their dependencies", and setup downloads `onnxruntime-node`. A WebAssembly or WebGPU engine shipped inside `main.js` would avoid that. `scripts/engine-probe/build.mjs` builds a development-only plugin into a test vault that times every engine inside Obsidian on 64 SciFact abstracts and checks vectors against native fp32. First run: `benchmarks/results/engine-probe-3070-electron34.json` (i5-12600KF, RTX 3070, Obsidian 1.15.1 on the 1.8.10 installer = Electron 34 / Chromium 132, focused).
+
+- [x] **onnxruntime-web 1.31.1 runs Granite** (1.17.3 could not). fp32 vectors are identical to native (cosine 1.000000 in Node); int8 differs slightly (0.997), so int8 indexes are not interchangeable between engines.
+- [x] **CPU WebAssembly works but is slow**: 326 ms/document on one thread, against 37 for native int8 and 12 for DirectML; queries 20 ms (fine). Obsidian is not cross-origin isolated, and threaded WASM **hangs** there instead of falling back (SharedArrayBuffer exists), so only one thread is usable. The probe now skips it.
+- [x] **WebGPU failed on Electron 34** with every build: JSEP stops at `[Mul] .../k_rotary/term2_mul` ("Can't perform binary op on the given tensors"); the native WebGPU EP (asyncify) fails to compile a shader with D3D (`X3663`, barrier in varying flow control); JSPI is not available. The adapter was found (NVIDIA Ampere, no shader-f16).
+- [ ] **Re-run on a current installer.** Electron is fixed by the installer, not by in-app updates; the current installer ships Electron 43. Reinstall Obsidian from obsidian.md (vaults and settings are kept), rebuild with `node scripts/engine-probe/build.mjs`, reload the test vault focused.
+- [ ] If the native WebGPU EP works on Electron 43: measure the bundle cost (asyncify WASM is 28.7 MB raw; compressed in `main.js`), first-pass shader compilation, and the Iris Xe laptop. Old installers would still need the CPU WASM path or the native download.
+- [ ] If JSEP is still needed: the rotary `Mul` may be patchable in the GPU graph, as `Gelu` was for DirectML.
+
 ## Next
 
 - [ ] **Try it in a real Obsidian vault**, including the upgrade path from a bge-small install: semantic search should report that the model changed, **Check / repair** should download Granite (52 MB int8, plus 195 MB fp32 on Windows to time the GPU), re-measure the device, and each vault should re-embed once. Both benchmarks are English scientific/medical abstracts, and IBM's training data may overlap them.

@@ -20,3 +20,4 @@ benchmarks/results/*.json
 !benchmarks/results/gpu-rtx3070.json
 !benchmarks/results/engines-3070-*.json
 !benchmarks/results/omnisearch-comparison.json
+!benchmarks/results/engine-probe-*.json
