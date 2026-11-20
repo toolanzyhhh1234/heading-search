@@ -3,17 +3,24 @@ import type { RuntimeStore } from "./runtime-store";
 import type { BackendInfo, Calibration } from "./backends";
 import type { DeviceProfile } from "./device-profile";
 import type { ModelConfig } from "./engine";
+import type { WebGpuRequest } from "./web-worker";
+import { webRuntimeWasm } from "./web-runtime";
 
-type Response={info?:BackendInfo;vectors?:ArrayBuffer[];calibration?:Calibration|Calibration["batch"]};
+type Response={info?:BackendInfo;vectors?:ArrayBuffer[];calibration?:unknown};
 
+/** The two engines' workers: the native one (a classic worker) and the built-in WebGPU one (a module worker). */
+type Engine="native"|"webgpu";
 /** One embedding worker and its request/response bookkeeping. */
 class Channel {
   private worker:Worker;
   private pending=new Map<number,{resolve:(response:Response)=>void;reject:(error:Error)=>void}>();
   private next=0;
-  constructor(onCrash:()=>void) {
-    const url=URL.createObjectURL(new Blob([EMBEDDING_WORKER_SOURCE],{type:"application/javascript"}));
-    try { this.worker=new Worker(url); } finally { URL.revokeObjectURL(url); }
+  private url:string;
+  constructor(onCrash:()=>void,engine:Engine="native") {
+    this.url=URL.createObjectURL(new Blob([engine==="webgpu" ? WEB_WORKER_SOURCE : EMBEDDING_WORKER_SOURCE],{type:"application/javascript"}));
+    // A module worker loads its script asynchronously, so the URL is revoked only when the worker closes.
+    try { this.worker=new Worker(this.url,engine==="webgpu" ? {type:"module"} : {}); }
+    catch(error) {URL.revokeObjectURL(this.url);throw error;}
     this.worker.onmessage=(event:MessageEvent)=>{
       const response=event.data,promise=this.pending.get(response.id);
       if(!promise) return;
@@ -41,6 +48,7 @@ class Channel {
     worker.onmessage=()=>{clearTimeout(timer);worker.terminate();};
     worker.onerror=()=>{clearTimeout(timer);worker.terminate();};
     try {worker.postMessage({id:0,type:"dispose"});} catch {clearTimeout(timer);worker.terminate();}
+    URL.revokeObjectURL(this.url);
   }
 }
 
@@ -57,7 +65,10 @@ function holdNativeRuntime(directory:string):void {
 
 export interface ClientOptions {threads:number;profile:()=>DeviceProfile;model:ModelConfig;changed?:()=>void}
 
-/** Runs the native engine in a worker. Semantic search needs it; keyword search works without it. */
+/** How long setup waits for the built-in engine's test; a stalled GPU must not hang setup. */
+const WEBGPU_TEST_MS=180_000;
+
+/** Runs the built-in WebGPU engine or the native engine in a worker. Semantic search needs one; keyword search works without. */
 export class EmbeddingClient {
   private channel?:Channel;
   private ready?:Promise<void>;
@@ -75,9 +86,9 @@ export class EmbeddingClient {
     if(!this.ready) this.ready=this.start().catch(error=>{this.ready=undefined;this.close(error);throw error;});
     return this.ready;
   }
-  private open():Channel {
+  private open(engine:Engine="native"):Channel {
     this.close(new Error("The embedding engine is restarting."));
-    const channel=new Channel(()=>{if(this.channel===channel){this.channel=undefined;this.ready=undefined;}});
+    const channel=new Channel(()=>{if(this.channel===channel){this.channel=undefined;this.ready=undefined;}},engine);
     this.channel=channel;
     return channel;
   }
@@ -89,6 +100,16 @@ export class EmbeddingClient {
       this.fallbackReason=`${reason} Keyword (BM25) search still works.`;this.options.changed?.();
       throw new Error(this.fallbackReason);
     };
+    if(profile.device==="webgpu") {
+      try {
+        const request=await this.webGpuRequest(model,assets);
+        const {info}=await this.open("webgpu").call("initialize-webgpu",request,transfers(request));
+        this.info=info;this.fallbackReason=undefined;this.options.changed?.();
+      } catch(error) {
+        fail(`The built-in GPU engine could not start: ${error instanceof Error ? error.message : String(error)}. Open Heading Search settings and choose Check / repair.`);
+      }
+      return;
+    }
     if(!this.runtime.supported) fail(`Semantic search is not available for ${this.runtime.platform}.`);
     if(!await this.runtime.isInstalled()) fail("The fast engine is missing or damaged. Open Heading Search settings and choose Check / repair.");
     try {
@@ -109,6 +130,23 @@ export class EmbeddingClient {
     const {vectors}=await this.channel.call("embed",{texts,query});
     return (vectors??[]).map(buffer=>new Float32Array(buffer));
   }
+  private async webGpuRequest(model:ModelStore,assets?:{tokenizer:object;config:object}):Promise<WebGpuRequest> {
+    const {tokenizer,config}=assets ?? await model.read();
+    return {wasm:webRuntimeWasm(),...await model.readGraph(),tokenizer,config,model:this.options.model};
+  }
+  /**
+   * Tests the built-in WebGPU engine with fp16 weights in a separate, short-lived worker: the vectors must be valid,
+   * then returns the time for the probe sections. Throws if it cannot run.
+   */
+  async calibrateWebGpu():Promise<number> {
+    const request=await this.webGpuRequest(this.models("fp16")),channel=new Channel(()=>{},"webgpu");
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try {
+      const timeout=new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error("the test did not finish within 3 minutes")),WEBGPU_TEST_MS);});
+      const {calibration}=await Promise.race([channel.call("calibrate-webgpu",request,transfers(request)),timeout]);
+      return (calibration as {ms:number}).ms;
+    } finally {clearTimeout(timer);channel.close(new Error("Calibration finished."));}
+  }
   /** Times int8 on the CPU against fp32 on DirectML in a separate, short-lived worker. */
   calibrate():Promise<Calibration> {return this.measure("calibrate") as Promise<Calibration>;}
   /** Times DirectML's batch tiers, once the GPU has been chosen. */
@@ -127,3 +165,6 @@ export class EmbeddingClient {
   private close(error:Error):void {this.channel?.close(error);this.channel=undefined;}
   dispose():void {this.stopped=true;this.ready=undefined;this.close(new Error("Search has been closed."));}
 }
+
+/** The large buffers of a WebGPU request move to the worker instead of being copied. */
+const transfers=(request:WebGpuRequest):Transferable[]=>[request.wasm,request.graph,...request.externalData.map(file=>file.data)];

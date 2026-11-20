@@ -52,6 +52,18 @@
       ],
       "sha256": "a3fad524afc3f060216a8ddbb1ac89c9b6498fba8995b5718bde879076a2e9ba",
       "bytes": 598902
+    },
+    "fp16": {
+      "path": "onnx/model_fp16.onnx",
+      "extra": [
+        {
+          "path": "onnx/model_fp16.onnx_data",
+          "sha256": "28d16e29cd623f25cc6fa0968700c5bc31036466091a5fa06d1353c1777f050e",
+          "bytes": 97402880
+        }
+      ],
+      "sha256": "ee200de55cb2f94e858aabca54be7697a9c0805a14c858ee26ad0922b05f57d7",
+      "bytes": 200792
     }
   }
 }

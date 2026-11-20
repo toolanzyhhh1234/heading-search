@@ -9,9 +9,11 @@ import { sharedRuntimeRoot } from "./runtime-store";
  * Which device and weights this computer uses, measured once at setup and shared by every vault.
  * Vectors from different weights are incompatible, so vaults must agree, and the choice must not flip on noisy re-measurement.
  */
+/** "webgpu" is the engine built into the plugin (onnxruntime-web); the others are the downloaded native engine. */
+export type Device=NativeDevice|"webgpu";
 export interface DeviceProfile {
   version:1;
-  device:NativeDevice;
+  device:Device;
   weights:ModelWeights;
   /** The person's choice: allow the GPU (see GPU_PREFERENCE). */
   allowGpu:boolean;
@@ -23,13 +25,19 @@ export interface DeviceProfile {
   calibrationVersion?:number;
   measuredAt?:string;
   calibration?:Calibration;
+  /** The built-in WebGPU engine's test: the graphics adapter and the time for the 12 probe sections. */
+  webgpu?:{adapter:string;ms:number};
+  /** Why the built-in WebGPU engine was not chosen, when the GPU was allowed. */
+  webgpuError?:string;
 }
 export const DEFAULT_PROFILE:DeviceProfile={version:1,device:"native-cpu",weights:"int8",allowGpu:true};
 /**
+ * 3: setup tries the built-in WebGPU engine (fp16 weights) first; it indexed faster than every native engine on an
+ * RTX 3070 and on Iris Xe graphics. Computers set up before it are offered it at the next Check / repair.
  * 2: DirectML runs the bundled GPU graph, several times faster than before (its Gelu used to run on the CPU), and
  * the batch tier is measured. Computers that chose the CPU against the old GPU graph deserve a new comparison.
  */
-export const CALIBRATION_VERSION=2;
+export const CALIBRATION_VERSION=3;
 /**
  * How much faster large batches must measure to be chosen. Noise must not pick them, and an interactive search can
  * wait behind one batch of indexing, which large batches make longer (64 sections instead of 16).
@@ -57,7 +65,7 @@ export class DeviceProfileStore {
   async read():Promise<DeviceProfile|null> {
     try {
       const value=JSON.parse(await fs.readFile(this.path,"utf8")) as DeviceProfile;
-      const valid=value.version===1 && ["directml","native-cpu"].includes(value.device) && ["int8","fp32"].includes(value.weights) && typeof value.allowGpu==="boolean"
+      const valid=value.version===1 && ["directml","native-cpu","webgpu"].includes(value.device) && ["int8","fp32","fp16"].includes(value.weights) && typeof value.allowGpu==="boolean"
         && (value.gpuBatch===undefined || ["standard","large"].includes(value.gpuBatch));
       return valid ? value : null;
     } catch {return null;}
@@ -69,3 +77,8 @@ export class DeviceProfileStore {
     await promote(temporary,this.path);
   }
 }
+/**
+ * The weights whose vectors an index stores. fp16 vectors match fp32 ones (minimum cosine 0.99999 on SciFact
+ * abstracts), so an index embedded with fp32 on DirectML stays valid when the computer moves to fp16 on WebGPU.
+ */
+export const vectorWeights=(weights:ModelWeights):string=>weights==="fp16" ? "fp32" : weights;

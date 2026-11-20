@@ -6,7 +6,8 @@ import { modelConfig, type ModelConfig } from "./embedding/engine";
 import spec from "./model-spec.json";
 import { ModelStore, modelDefinition, modelKey, type ModelWeights, type Download } from "./embedding/model-store";
 import { RuntimeStore } from "./embedding/runtime-store";
-import { CALIBRATION_VERSION, DEFAULT_PROFILE, DeviceProfileStore, chooseDevice, chooseGpuBatch, type DeviceProfile } from "./embedding/device-profile";
+import { CALIBRATION_VERSION, DEFAULT_PROFILE, DeviceProfileStore, chooseDevice, chooseGpuBatch, vectorWeights, type DeviceProfile } from "./embedding/device-profile";
+import { checkWebGpu } from "./embedding/web-runtime";
 import { SearchService } from "./index/service";
 import { SearchModal } from "./ui/search-modal";
 import { SearchSettingsTab } from "./ui/settings-tab";
@@ -39,7 +40,7 @@ export default class HeadingSearchPlugin extends Plugin {
     const threads=Math.max(1,Math.min(4,Math.floor((navigator.hardwareConcurrency||2)/2)));
     this.embedding=new EmbeddingClient(weights=>this.model(weights),this.runtimeStore,{threads,profile:()=>this.profile,model:modelConfig(spec as ModelConfig)});
     const directory=`${this.app.vault.configDir}/plugins/${this.manifest.id}/index`;
-    this.service=new SearchService(this.app,()=>this.settings,this.embedding,directory,()=>status.setText(`Search: ${this.service.status}`),()=>this.profile.weights);
+    this.service=new SearchService(this.app,()=>this.settings,this.embedding,directory,()=>status.setText(`Search: ${this.service.status}`),()=>vectorWeights(this.profile.weights));
     await Promise.all([this.service.load(),this.checkShared()]);
     this.addRibbonIcon("search","Search notes by heading and meaning",()=>this.openSearch());
     this.addCommand({id:"search-notes",name:"Search notes",callback:()=>this.openSearch()});
@@ -61,7 +62,8 @@ export default class HeadingSearchPlugin extends Plugin {
   private async checkShared():Promise<void> {
     // isReady also installs files bundled with a plugin update (the GPU graph) beside weights already on disk.
     const [model,runtime]=await Promise.all([this.model(this.profile.weights).isReady(),this.runtimeStore.isInstalled()]);
-    this.sharedModelAvailable=model && (runtime || !this.runtimeStore.supported);
+    // The built-in engine needs only the model; the native one also needs the downloaded runtime.
+    this.sharedModelAvailable=model && (this.profile.device==="webgpu" || runtime || !this.runtimeStore.supported);
   }
   private openSearch():void {new SearchModal(this.app,this.service,{...this.settings}).open();}
   async saveSettings():Promise<void> {await this.saveData(this.settings);}
@@ -85,17 +87,33 @@ export default class HeadingSearchPlugin extends Plugin {
   }
 
   /**
-   * Pick the device once per computer. int8 on the CPU is always installed; on Windows, fp32 is fetched to time
-   * DirectML and kept only if the GPU wins, which then also times its batch tier. A saved choice is reused so
-   * re-measurement noise never forces re-embedding; a new model or calibration method is measured again.
+   * Pick the device once per computer. When the GPU is allowed, the built-in WebGPU engine with fp16 weights is tried
+   * first: it needs no native download and indexed faster than every native engine where measured. Otherwise the native
+   * engine is installed: int8 on the CPU, and on Windows fp32 is fetched to time DirectML and kept only if the GPU wins,
+   * which then also times its batch tier. A saved choice is reused so re-measurement noise never forces re-embedding;
+   * a new model or calibration method is measured again.
    */
   private async chooseProfile(update:(message:string)=>void,allowGpu:boolean,remeasure:boolean):Promise<DeviceProfile> {
-    await this.model("int8").ensure(update);
     const saved=await this.profiles.read();
     if(saved && saved.allowGpu===allowGpu && saved.model===modelKey && saved.calibrationVersion===CALIBRATION_VERSION && !remeasure
       && await this.model(saved.weights).isReady())return saved;
-    let profile:DeviceProfile={...DEFAULT_PROFILE,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION};
-    if(allowGpu && this.runtimeStore.gpu && this.runtimeStore.supported) {
+    let webgpuError:string|undefined;
+    if(allowGpu) {
+      const webgpu=await this.tryWebGpu(update);
+      if("profile" in webgpu) {
+        if(this.runtimeStore.gpu)await this.model("fp32").removeWeights();
+        await this.profiles.write(webgpu.profile);
+        return webgpu.profile;
+      }
+      webgpuError=webgpu.error;
+      update(`The built-in GPU engine cannot be used: ${webgpuError} Setting up the native engine instead…`);
+    }
+    if(!this.runtimeStore.supported)
+      throw new Error(`Semantic search is not available for ${this.runtimeStore.platform}.${webgpuError ? ` The built-in GPU engine cannot be used: ${webgpuError}` : ""} Keyword search still works.`);
+    await this.runtimeStore.ensure(update);
+    await this.model("int8").ensure(update);
+    let profile:DeviceProfile={...DEFAULT_PROFILE,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION,webgpuError};
+    if(allowGpu && this.runtimeStore.gpu) {
       await this.model("fp32").ensure(message=>update(`Testing this computer's graphics: ${message}`));
       update("Comparing the GPU and CPU on this computer…");
       // Stop this vault's engine first so its indexing does not compete with the measurement.
@@ -108,11 +126,28 @@ export default class HeadingSearchPlugin extends Plugin {
         calibration.batch=await this.embedding.calibrateBatch().catch(()=>undefined);
         gpuBatch=calibration.batch ? chooseGpuBatch(calibration.batch) : "standard";
       }
-      profile={version:1,...choice,gpuBatch,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION,calibration,measuredAt:new Date().toISOString()};
+      profile={version:1,...choice,gpuBatch,allowGpu,model:modelKey,calibrationVersion:CALIBRATION_VERSION,calibration,webgpuError,measuredAt:new Date().toISOString()};
     }
     if(profile.weights!=="fp32" && this.runtimeStore.gpu)await this.model("fp32").removeWeights();
     await this.profiles.write(profile);
     return profile;
+  }
+  /** Downloads the fp16 weights only if a hardware adapter exists, then tests the engine; the weights go if it fails. */
+  private async tryWebGpu(update:(message:string)=>void):Promise<{profile:DeviceProfile}|{error:string}> {
+    const check=await checkWebGpu();
+    if(!check.ok)return {error:check.error};
+    await this.model("fp16").ensure(update);
+    update("Testing the built-in GPU engine on this computer…");
+    // Stop this vault's engine first so its indexing does not compete with the measurement.
+    this.embedding.restart();
+    try {
+      const ms=await this.embedding.calibrateWebGpu();
+      return {profile:{version:1,device:"webgpu",weights:"fp16",allowGpu:true,model:modelKey,calibrationVersion:CALIBRATION_VERSION,
+        webgpu:{adapter:check.adapter,ms},measuredAt:new Date().toISOString()}};
+    } catch(error) {
+      await this.model("fp16").removeWeights();
+      return {error:`Its test failed on ${check.adapter} (${error instanceof Error ? error.message : String(error)}).`};
+    }
   }
   private apply(profile:DeviceProfile):void {
     this.profile=profile;
@@ -120,10 +155,13 @@ export default class HeadingSearchPlugin extends Plugin {
     this.sharedModelAvailable=true;
   }
   describeProfile(profile=this.profile):string {
+    if(profile.device==="webgpu")
+      return `Using the GPU through the built-in engine (WebGPU) with half-precision weights${profile.webgpu ? ` on ${profile.webgpu.adapter}. Measured on 12 sample sections: ${profile.webgpu.ms.toFixed(0)} ms.` : "."}`;
+    const webgpu=profile.webgpuError ? ` The built-in GPU engine was not used: ${profile.webgpuError}` : "";
     const c=profile.calibration;
     const timing=c ? ` Measured on 12 sample sections: CPU ${c.cpuMs.toFixed(0)} ms, GPU ${c.gpuMs===null ? `unavailable${c.gpuError ? ` (${c.gpuError})` : ""}` : `${c.gpuMs.toFixed(0)} ms`}.` : "";
     const batch=c?.batch ? ` On 64 sections: small batches ${c.batch.standardMs.toFixed(0)} ms, large batches ${c.batch.largeMs===null ? "unavailable" : `${c.batch.largeMs.toFixed(0)} ms`}.` : "";
-    return `${profile.device==="directml" ? `Using the GPU (DirectML) with full-precision weights${profile.gpuBatch==="large" ? " in large batches" : ""}.` : "Using the CPU with 8-bit weights."}${timing}${batch}`;
+    return `${profile.device==="directml" ? `Using the GPU (DirectML) with full-precision weights${profile.gpuBatch==="large" ? " in large batches" : ""}.` : "Using the CPU with 8-bit weights."}${timing}${batch}${webgpu}`;
   }
   async setupSemantic(progress:(message:string)=>void):Promise<void> {
     if(this.settingUp)return;
@@ -131,10 +169,9 @@ export default class HeadingSearchPlugin extends Plugin {
     const wasEnabled=this.settings.semanticEnabled;
     const update=(message:string)=>{this.setupMessage=message;progress(message);};
     try {
-      // Semantic search runs only on the native engine.
-      if(!this.runtimeStore.supported)throw new Error(`Semantic search is not available for ${this.runtimeStore.platform}. Keyword search still works.`);
-      await this.runtimeStore.ensure(update);
       const profile=await this.chooseProfile(update,(await this.profiles.read())?.allowGpu ?? true,false);
+      // Check / repair: a saved native choice still needs its runtime, which chooseProfile only installs when measuring.
+      if(profile.device!=="webgpu")await this.runtimeStore.ensure(update);
       await this.model(profile.weights).ensure(update);
       this.apply(profile);
       update(`Semantic search is ready. ${this.describeProfile()}`);
@@ -154,7 +191,7 @@ export default class HeadingSearchPlugin extends Plugin {
     try {
       const before=this.profile.weights,profile=await this.chooseProfile(update,allowGpu,true);
       this.apply(profile);
-      update(`${this.describeProfile()}${profile.weights!==before ? " Notes will be embedded again with the new weights." : ""}`);
+      update(`${this.describeProfile()}${vectorWeights(profile.weights)!==vectorWeights(before) ? " Notes will be embedded again with the new weights." : ""}`);
       this.refresh();
     } catch(error) {
       update(error instanceof Error ? error.message : "Could not change the device. Please retry.");throw error;

@@ -1,7 +1,7 @@
 import { createTokenizer, EmbeddingEngine, RerankEngine, scoringHead, type BatchLimits, type Embedder, type ModelConfig, type OrtModule } from "./engine";
 
 export type NativeDevice="directml"|"native-cpu";
-export type BackendKind=NativeDevice;
+export type BackendKind=NativeDevice|"webgpu";
 export interface BackendInfo {kind:BackendKind;label:string;threads:number;batchTexts:number;
   /** Set when the chosen device could not start and a compatible slower one is running instead. */
   fallback?:string}
@@ -69,16 +69,16 @@ export async function openNative(request:NativeRequest):Promise<{engine:Embedder
 }
 
 /** Section lengths in tokens: mostly short notes, some long ones, like a typical vault. */
-const PROBE_LENGTHS=[24,48,64,96,128,160,192,256,320,384,448,510];
+export const PROBE_LENGTHS=[24,48,64,96,128,160,192,256,320,384,448,510];
 /**
  * For the batch tier: 64 sections skewed towards short ones, as vaults are. The 12 evenly spread probe lengths above
  * favour small batches (each length occurs once, so one large batch pads them all to 510 tokens), unlike real text.
  */
 const BATCH_PROBE_LENGTHS=Array.from({length:64},(_,i)=>Math.round(24+486*(i/63)**2));
 /** "note" is a single WordPiece token, so each text has exactly the intended length with [CLS] and [SEP]. */
-const probeTexts=(lengths:number[])=>lengths.map(length=>Array(length-2).fill("note").join(" "));
+export const probeTexts=(lengths:number[])=>lengths.map(length=>Array(length-2).fill("note").join(" "));
 /** Best of a few runs after a warm-up: embed through the real engine, so batching, shape buckets, and padding all count. */
-async function timeEngine(engine:EmbeddingEngine,texts:string[],chunk=texts.length,attempts=3):Promise<number> {
+export async function timeEngine(engine:EmbeddingEngine,texts:string[],chunk=texts.length,attempts=3):Promise<number> {
   const run=async()=>{for(let i=0;i<texts.length;i+=chunk)await engine.embed(texts.slice(i,i+chunk));};
   await run();
   let best=Infinity;

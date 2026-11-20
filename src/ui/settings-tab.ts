@@ -25,9 +25,8 @@ export class SearchSettingsTab extends PluginSettingTab {
     new Setting(containerEl).setName("Optional semantic search").setHeading();
     const megabytes=(bytes:number)=>Math.round(bytes/1e6);
     const runtime=this.plugin.runtimeStore;
-    const engine=runtime.supported ? ` and the fast engine (Microsoft ONNX Runtime, ${megabytes(runtime.downloadBytes)} MB from the npm registry)` : "";
-    const gpuTest=runtime.gpu ? ` On Windows, setup also downloads full-precision weights (${megabytes(weightsBytes("fp32"))} MB) to test the GPU, and keeps them only if the GPU is faster.` : "";
-    containerEl.createEl("p",{text:`IBM's Granite Embedding small model runs on this computer. Setup downloads the model (${megabytes(weightsBytes("int8"))} MB from Hugging Face)${engine} once per computer user, and every vault shares them.${gpuTest} Your notes and queries stay on this computer. No API key or separate app is needed.`});
+    const native=runtime.supported ? ` If it cannot run here, setup downloads 8-bit weights (${megabytes(weightsBytes("int8"))} MB from Hugging Face) and the native engine (Microsoft ONNX Runtime, ${megabytes(runtime.downloadBytes)} MB from the npm registry) instead${runtime.gpu ? `, plus full-precision weights (${megabytes(weightsBytes("fp32"))} MB) to test the GPU, kept only if the GPU is faster` : ""}.` : "";
+    containerEl.createEl("p",{text:`IBM's Granite Embedding small model runs on this computer, on the GPU engine built into this plugin (WebGPU, part of Microsoft ONNX Runtime). Setup downloads the model's half-precision weights (${megabytes(weightsBytes("fp16"))} MB from Hugging Face) and tests the engine.${native} Downloads happen once per computer user, and every vault shares them. Your notes and queries stay on this computer. No API key or separate app is needed.`});
     const status=containerEl.createDiv({cls:"heading-search-model-status",attr:{role:"status","aria-live":"polite"}});
     status.setText(this.plugin.setupMessage || (this.plugin.sharedModelAvailable ? "The shared model is already installed. You can use it here without downloading it again." : "The model is shared by all your vaults."));
     new Setting(containerEl).setName(this.plugin.settings.semanticEnabled ? "Shared model enabled" : "Set up the shared model")
@@ -45,8 +44,8 @@ export class SearchSettingsTab extends PluginSettingTab {
       const {info,fallbackReason}=this.plugin.embedding;
       new Setting(containerEl).setName("Embedding engine")
         .setDesc(`${this.plugin.describeProfile()} ${info ? `Running: ${info.label}.${fallbackReason ? ` ${fallbackReason}` : ""}` : "Starts when notes need embedding or you run a semantic search."}`);
-      if(runtime.gpu && runtime.supported) new Setting(containerEl).setName("Allow the GPU on this computer")
-        .setDesc("When on, the GPU is used unless it measured more than twice as slow as the CPU, because the CPU slows down whenever Obsidian is in the background. This applies to every vault; changing it re-measures, and vaults embed their notes again if the device changes.")
+      new Setting(containerEl).setName("Allow the GPU on this computer")
+        .setDesc(`When on, the built-in GPU engine is used if it works here.${runtime.gpu ? " Otherwise DirectML is used unless it measured more than twice as slow as the CPU, because the CPU slows down whenever Obsidian is in the background." : ""} When off, the native CPU engine is downloaded and used. This applies to every vault; changing it re-measures, and vaults embed their notes again if the vectors change.`)
         .addToggle(toggle=>toggle.setValue(this.plugin.profile.allowGpu).setDisabled(this.plugin.settingUp).onChange(async value=>{
           toggle.setDisabled(true);
           try {await this.plugin.setGpuAllowed(value,message=>status.setText(message));}
@@ -83,7 +82,7 @@ export class SearchSettingsTab extends PluginSettingTab {
       .addButton(button=>button.setButtonText("Rebuild index").onClick(()=>{this.plugin.refresh(true);this.display();}));
     const details=containerEl.createEl("details");details.createEl("summary",{text:"Local storage and privacy"});
     details.createEl("p",{text:`Shared model folder: ${sharedModelRoot()}`});
-    details.createEl("p",{text:`Shared fast engine folder: ${sharedRuntimeRoot()}. It holds Microsoft's official onnxruntime-node libraries for ${this.plugin.runtimeStore.platform}, checked against pinned SHA-256 hashes when installed, plus the device choice for this computer.`});
+    details.createEl("p",{text:`The built-in GPU engine (onnxruntime-web) is part of this plugin and installs nothing. Shared native engine folder: ${sharedRuntimeRoot()}. It holds the device choice for this computer and, only if the built-in engine cannot run, Microsoft's official onnxruntime-node libraries for ${this.plugin.runtimeStore.platform}, checked against pinned SHA-256 hashes when installed.`});
     details.createEl("p",{text:"Each vault keeps its own text index and compressed vectors in this plugin's index folder. Notes from different vaults are never combined. Deleting or disabling the plugin in one vault does not delete the shared model. There is no telemetry."});
   }
 }

@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import { homedir } from "node:os";
-import { join, dirname } from "node:path";
+import { basename, join, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
 import spec from "../model-spec.json";
 import gpuGraph from "../assets/granite-small-r2.gpu.onnx";
@@ -95,6 +95,17 @@ export class ModelStore {
     const tokenizer=JSON.parse(await fs.readFile(join(this.directory,"tokenizer.json"),"utf8"));
     const config=JSON.parse(await fs.readFile(join(this.directory,"tokenizer_config.json"),"utf8"));
     return {modelPath:this.modelPath,gpuModelPath:this.gpuModelPath,tokenizer,config};
+  }
+  /**
+   * The graph and its external-data files as bytes, for the built-in engine: its worker cannot read files. External
+   * data is named the way the graph refers to it (beside the graph, so by file name).
+   */
+  async readGraph():Promise<{graph:ArrayBuffer;externalData:{path:string;data:ArrayBuffer}[]}> {
+    const bytes=async(path:string)=>{
+      const data=await fs.readFile(path);
+      return (data.byteOffset===0 && data.byteLength===data.buffer.byteLength ? data.buffer : data.buffer.slice(data.byteOffset,data.byteOffset+data.byteLength)) as ArrayBuffer;
+    };
+    return {graph:await bytes(this.modelPath),externalData:await Promise.all(this.externalDataPaths.map(async path=>({path:basename(path),data:await bytes(path)})))};
   }
   /** Delete the weights files (not the shared tokenizer). Silently kept if another vault has them open. */
   async removeWeights():Promise<void> {
