@@ -82,11 +82,11 @@ That difference shows on long natural-language queries. On two public benchmark 
 | | SciFact (full-sentence claims) | NFCorpus (short topics) |
 | --- | ---: | ---: |
 | Obsidian built-in search | 0.007 | 0.161 |
-| Omnisearch | 0.127 | 0.203 |
+| Omnisearch | 0.136 | 0.203 |
 | Heading Search, keyword | 0.690 | 0.330 |
 | Heading Search, hybrid | 0.745 | 0.376 |
 
-Most of the gap comes from a deliberate design choice: Omnisearch, like Obsidian's built-in search, returns only notes containing every query word. That keeps results precise when you type two or three words, but long questions often return nothing; 67% of SciFact queries do. With any word allowed to match, Omnisearch's ranking scores 0.536 and 0.282. These collections have no headings, so this compares whole-note ranking only, not section search. See [the comparison](benchmarks/RESULTS.md#omnisearch-and-the-built-in-search) for method and confidence intervals.
+Most of the gap comes from a deliberate design choice: Omnisearch, like Obsidian's built-in search, returns only notes containing every query word. That keeps results precise when you type two or three words, but long questions often return nothing; 67% of SciFact queries do. With any word allowed to match, Omnisearch's ranking scores 0.540 and 0.281. These collections have no headings, so this compares whole-note ranking only, not section search. See [the comparison](benchmarks/RESULTS.md#omnisearch-and-the-built-in-search) for method and confidence intervals.
 
 ## Privacy and network use
 

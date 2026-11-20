@@ -26,6 +26,10 @@ node scripts/benchmark-engines.mjs --runtime <dir>
 # Optional: Omnisearch and the built-in search, with Omnisearch's own libraries kept out of package.json
 npm install --prefix .cache/omnisearch-bench --ignore-scripts --no-save minisearch@7.1.0 search-query-parser@1.6.0 markdown-link-extractor@4.0.4
 node scripts/benchmark-omnisearch.mjs   # uses the fp32 embedding cache; --embeddings granite-small-r2-int8 for int8
+# Optional: check the reproduction against the real plugin. Builds two vaults in .cache/omnisearch-vaults/ with Omnisearch
+# 1.32.0 (pinned hashes) and its HTTP API on; open both in Obsidian, enable plugins, then run with --live
+node scripts/setup-omnisearch-vaults.mjs
+node scripts/benchmark-omnisearch.mjs --live
 node scripts/report-benchmark.mjs
 ```
 

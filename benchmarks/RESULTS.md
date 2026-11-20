@@ -130,16 +130,16 @@ No reranker improved both datasets: they help slightly on SciFact and hurt on NF
 
 ## Omnisearch and the built-in search
 
-A curiosity comparison, not a decision gate (`scripts/benchmark-omnisearch.mjs`). [Omnisearch](https://github.com/scambier/obsidian-omnisearch) and Obsidian's built-in search rank whole notes; these collections have no headings, so only whole-note ranking is compared, not section search. Each abstract is a note named after its title. Omnisearch 1.32.0 (e4a51ab), default settings, reproduced with minisearch 7.1.0: its tokenizer, query parser, field weights, prefix and typo matching, title-prefix boost, and 50-result limit, copied from its source and run with its own libraries rather than inside Obsidian. The built-in search is modelled on its documented defaults: every word must occur as a case-insensitive substring of the file name or content, and results are sorted by file name A to Z. Heading Search rows use granite-small-r2-fp32 embeddings with int8 vector storage. Intervals are paired bootstrap 95% CIs of the nDCG@10 difference against Omnisearch.
+A curiosity comparison, not a decision gate (`scripts/benchmark-omnisearch.mjs`). [Omnisearch](https://github.com/scambier/obsidian-omnisearch) and Obsidian's built-in search rank whole notes; these collections have no headings, so only whole-note ranking is compared, not section search. Each abstract is a note named after its title (`scripts/beir-notes.mjs`: characters Obsidian forbids removed, trailing dots dropped as Windows does, names capped at 150 characters). Omnisearch 1.32.0 (e4a51ab), default settings, reproduced with minisearch 7.1.0: its tokenizer, query parser, field weights, prefix matching from the first letter, typo matching, accent folding, title-prefix boost, and 50-result limit, copied from its source with the defaults it ships (its online documentation lists older defaults) and run with its own libraries. It has not been checked against the running plugin for these numbers; `scripts/setup-omnisearch-vaults.mjs` and `scripts/benchmark-omnisearch.mjs --live` do that. The built-in search is modelled on its documented defaults: every word must occur as a case-insensitive substring of the file name or content, and results are sorted by file name A to Z. Heading Search rows use granite-small-r2-fp32 embeddings with int8 vector storage. Intervals are paired bootstrap 95% CIs of the nDCG@10 difference against Omnisearch.
 
 | Method | SciFact nDCG@10 | SciFact no results | NFCorpus nDCG@10 | NFCorpus no results |
 | --- | ---: | ---: | ---: | ---: |
-| Obsidian built-in search | 0.0067 [-0.157, -0.086] | 99% | 0.1611 [-0.055, -0.029] | 50% |
-| Omnisearch, default settings | 0.1272 | 67% | 0.2029 | 43% |
-| *Omnisearch ranking, any word may match (diagnostic)* | 0.5363 [+0.353, +0.464] | 0% | 0.2822 [+0.060, +0.100] | 5% |
-| Heading Search, keyword | 0.6901 [+0.513, +0.612] | 0% | 0.3304 [+0.103, +0.153] | 5% |
-| Heading Search, semantic | 0.7463 [+0.569, +0.668] | 0% | 0.3683 [+0.135, +0.195] | 0% |
-| Heading Search, hybrid | 0.7451 [+0.571, +0.663] | 0% | 0.3763 [+0.147, +0.200] | 0% |
+| Obsidian built-in search | 0.0067 [-0.167, -0.093] | 99% | 0.1611 [-0.056, -0.029] | 50% |
+| Omnisearch, default settings | 0.1359 | 67% | 0.2032 | 43% |
+| *Omnisearch ranking, any word may match (diagnostic)* | 0.5401 [+0.347, +0.459] | 0% | 0.2815 [+0.060, +0.099] | 5% |
+| Heading Search, keyword | 0.6901 [+0.504, +0.604] | 0% | 0.3304 [+0.103, +0.152] | 5% |
+| Heading Search, semantic | 0.7463 [+0.560, +0.661] | 0% | 0.3683 [+0.135, +0.195] | 0% |
+| Heading Search, hybrid | 0.7451 [+0.562, +0.656] | 0% | 0.3763 [+0.147, +0.200] | 0% |
 
 SciFact queries are full-sentence claims (12.5 words on average); NFCorpus queries are short topics (3.3 words). Omnisearch, like the built-in search, returns only notes that contain every query word, allowing prefixes and small typos. That keeps results precise for the two or three words people usually type, but 67% of SciFact claims and 43% of NFCorpus topics return nothing: claims are worded differently from the abstracts that answer them. For example, "A deficiency of vitamin B12 increases blood levels of homocysteine" is answered by abstracts about folic acid and homocysteine that contain neither "deficiency" nor "vitamin". The diagnostic row keeps Omnisearch's ranking but lets any word match; it recovers most of the gap. The rest is mostly stemming and stopword removal in Heading Search's BM25, against prefix and typo matching and a 10x file-name weight in Omnisearch. Omnisearch also does much that this benchmark does not measure, including mobile support, PDF and image indexing, and instant results with no model download.
 
