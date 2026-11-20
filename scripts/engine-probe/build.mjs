@@ -3,14 +3,21 @@
 // .cache/runtime-dev, and onnxruntime-web outside package.json:
 //   npm install --prefix .cache/ortweb-dev --ignore-scripts --no-save onnxruntime-web@1.31.1
 // Usage: node scripts/engine-probe/build.mjs [--vault .test-vault/<name>]
+//        node scripts/engine-probe/build.mjs --portable [<out dir>]   (default dist/engine-probe-portable)
+// --portable copies the model, WASM builds, and the native engine (this platform only) into the plugin folder, with
+// relative paths, so the folder can be copied into any vault's .obsidian/plugins/ on another computer.
 // Opening the vault (or reloading it) runs the probe; results land in <vault>/.obsidian/plugins/heading-search-engine-probe/results.json.
 import { build } from 'esbuild';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, cp, rm } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { readdirSync } from 'node:fs';
 const option=name=>{const i=process.argv.indexOf(`--${name}`);return i>0?process.argv[i+1]:undefined;};
-const vault=option('vault')??join('.test-vault',readdirSync('.test-vault',{withFileTypes:true}).find(e=>e.isDirectory()).name);
-const id='heading-search-engine-probe',target=join(vault,'.obsidian','plugins',id);
+const portable=process.argv.includes('--portable');
+const portableRoot=portable?(process.argv[process.argv.indexOf('--portable')+1]?.startsWith('--')===false?process.argv[process.argv.indexOf('--portable')+1]:'dist/engine-probe-portable'):null;
+const id='heading-search-engine-probe';
+const vault=portable?null:option('vault')??join('.test-vault',readdirSync('.test-vault',{withFileTypes:true}).find(e=>e.isDirectory()).name);
+const target=portable?join(portableRoot,id):join(vault,'.obsidian','plugins',id);
+if(portable) await rm(target,{recursive:true,force:true});
 const ortWeb=resolve('.cache/ortweb-dev/node_modules/onnxruntime-web/dist');
 const ortVersion=JSON.parse(await readFile('.cache/ortweb-dev/node_modules/onnxruntime-web/package.json','utf8')).version;
 const spec=JSON.parse(await readFile('src/model-spec.json','utf8'));
@@ -28,13 +35,41 @@ const corpus=(await readFile('benchmarks/data/scifact/corpus.jsonl','utf8')).tri
 const docs=Array.from({length:64},(_,i)=>corpus[Math.floor(i*corpus.length/64)]).map(d=>`${d.title}\n${d.text}`.trim());
 const queries=(await readFile('benchmarks/data/scifact/queries.jsonl','utf8')).trim().split('\n').slice(0,16).map(l=>JSON.parse(l).text);
 const weights=Object.fromEntries(Object.entries(spec.weights).map(([k,w])=>[k,{path:w.path,external:w.extra[0].path,gpu:w.gpu?.path}]));
-await writeFile(join(target,'probe.json'),JSON.stringify({repo:resolve('.'),runtimeDirectory:resolve('.cache/runtime-dev'),ortWeb,ortVersion,
-  modelDirectory:resolve(`.cache/models/${spec.id}/${spec.revision}`),docs,queries,weights,
+const modelDirectory=resolve(`.cache/models/${spec.id}/${spec.revision}`),runtimeDirectory=resolve('.cache/runtime-dev');
+let paths={runtimeDirectory,ortWeb,modelDirectory};
+if(portable) {
+  // Only the files the probe opens: tokenizer, both weight variants, the DirectML graph, the four WASM builds,
+  // and onnxruntime-node with this platform's binaries.
+  const modelFiles=['tokenizer.json','tokenizer_config.json',...Object.values(spec.weights).flatMap(w=>[w.path,...w.extra.map(e=>e.path),...(w.gpu?[w.gpu.path]:[])])];
+  for(const file of modelFiles) await cp(join(modelDirectory,file),join(target,'model',file));
+  for(const file of ['ort-wasm-simd-threaded.wasm','ort-wasm-simd-threaded.jsep.wasm','ort-wasm-simd-threaded.asyncify.wasm','ort-wasm-simd-threaded.jspi.wasm'])
+    await cp(join(ortWeb,file),join(target,'ort',file));
+  const modules=join(runtimeDirectory,'node_modules'),out=join(target,'runtime','node_modules');
+  await cp(join(modules,'onnxruntime-common'),join(out,'onnxruntime-common'),{recursive:true});
+  for(const part of ['package.json','dist','lib']) await cp(join(modules,'onnxruntime-node',part),join(out,'onnxruntime-node',part),{recursive:true});
+  const binary=join('bin','napi-v6',process.platform,process.arch);
+  await cp(join(modules,'onnxruntime-node',binary),join(out,'onnxruntime-node',binary),{recursive:true});
+  paths={runtimeDirectory:'runtime',ortWeb:'ort',modelDirectory:'model'};
+  await writeFile(join(target,'README.txt'),[
+    'Heading Search engine probe (development only). Times embedding engines inside Obsidian; nothing leaves this computer.',
+    '',
+    `1. Use a current Obsidian installer (Electron 43 or later; Settings > About shows the installer version). Built for ${process.platform}-${process.arch}.`,
+    `2. Copy this "${id}" folder into a vault's .obsidian/plugins/ folder. A new empty vault is fine.`,
+    '3. Open the vault, turn on community plugins, and enable "Heading Search engine probe (dev)".',
+    '   It starts once the vault has loaded; a notice shows progress. To run it again: Ctrl+P > "Run engine probe".',
+    '4. Keep the Obsidian window focused for 5-10 minutes, until the notice says it has finished.',
+    '5. Send back results.json from this folder.',
+  ].join('\n')+'\n');
+}
+await writeFile(join(target,'probe.json'),JSON.stringify({...paths,ortVersion,docs,queries,weights,
   model:{dimensions:spec.dimensions,maxTokens:spec.maxTokens,pooling:spec.pooling,queryPrefix:spec.queryPrefix,documentPrefix:spec.documentPrefix??''}}));
 await writeFile(join(target,'manifest.json'),JSON.stringify({id,name:'Heading Search engine probe (dev)',version:'0.0.1',minAppVersion:'1.8.0',
   description:'Development-only: times embedding engines inside Obsidian.',author:'dev',isDesktopOnly:true},null,2));
-const list=join(vault,'.obsidian','community-plugins.json');
-const enabled=JSON.parse(await readFile(list,'utf8').catch(()=>'[]'));
-if(!enabled.includes(id)) {enabled.push(id);await writeFile(list,JSON.stringify(enabled,null,2));}
+if(!portable) {
+  const list=join(vault,'.obsidian','community-plugins.json');
+  const enabled=JSON.parse(await readFile(list,'utf8').catch(()=>'[]'));
+  if(!enabled.includes(id)) {enabled.push(id);await writeFile(list,JSON.stringify(enabled,null,2));}
+}
 console.log(`Built the engine probe (onnxruntime-web ${ortVersion}) into ${resolve(target)}`);
-console.log('Open or reload that vault in Obsidian with the window focused; it runs on load (about 5-10 minutes).');
+console.log(portable ? 'Copy that folder into a vault\'s .obsidian/plugins/ on the other computer; see README.txt inside.'
+  : 'Open or reload that vault in Obsidian with the window focused; it runs on load (about 5-10 minutes).');

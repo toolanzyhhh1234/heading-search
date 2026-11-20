@@ -35,6 +35,9 @@ export default class EngineProbe extends Plugin {
     const fs=require("fs") as typeof import("fs"),path=require("path") as typeof import("path");
     const dir=path.join((this.app.vault.adapter as unknown as {basePath:string}).basePath,this.manifest.dir!);
     const probe=JSON.parse(fs.readFileSync(path.join(dir,"probe.json"),"utf8")) as Probe;
+    // A portable build (build.mjs --portable) stores paths relative to this plugin's folder.
+    for(const key of ["runtimeDirectory","ortWeb","modelDirectory"] as const)
+      if(!path.isAbsolute(probe[key])) probe[key]=path.join(dir,probe[key]);
     const out=path.join(dir,"results.json");
     const p=process as unknown as {versions:Record<string,string>;platform:string};
     const results:{createdAt:string;environment:object;configs:object[];done?:boolean}={createdAt:new Date().toISOString(),environment:{
