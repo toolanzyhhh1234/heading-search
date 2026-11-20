@@ -90,7 +90,7 @@ function liveCheck(o) {
   const current=checks.every(([d,c])=>c && Math.abs(c.ndcg10.reproduction-o.datasets[d].methods.omnisearch.ndcg10)<1e-9);
   if(!current) return 'It has not been checked against the running plugin for these numbers; `scripts/setup-omnisearch-vaults.mjs` and `scripts/benchmark-omnisearch.mjs --live` do that.';
   const [sf,nf]=checks.map(([,c])=>c);
-  return `Checked against Omnisearch running in Obsidian through its HTTP API (${sf.checkedAt.slice(0,10)}): the reproduction returns the identical top 10 for ${sf.identicalTop10} of ${sf.queries} SciFact and ${nf.identicalTop10} of ${nf.queries} NFCorpus queries, and the running plugin scores ${sf.ndcg10.live.toFixed(4)} and ${nf.ndcg10.live.toFixed(4)} nDCG@10.`;
+  return `Checked against Omnisearch running in Obsidian through its HTTP API (${sf.checkedAt.slice(0,10)}): the reproduction returns the identical top 10 for ${sf.identicalTop10} of ${sf.queries} SciFact and ${nf.identicalTop10} of ${nf.queries} NFCorpus queries, and the running plugin scores ${sf.ndcg10.live.toFixed(4)} and ${nf.ndcg10.live.toFixed(4)} nDCG@10.${sf.sameTop10Set===sf.queries&&nf.sameTop10Set===nf.queries&&sf.identicalTop10+nf.identicalTop10<sf.queries+nf.queries?' Where the top 10 differs, it holds the same notes in a different order (notes with tied scores).':''}`;
 }
 if(omni) {
   const {scifact:sf,nfcorpus:nf}=omni.datasets;

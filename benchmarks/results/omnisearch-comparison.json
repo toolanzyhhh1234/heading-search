@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-11-20T03:32:19.462Z",
+  "createdAt": "2026-11-20T03:41:10.339Z",
   "embeddings": "granite-small-r2-fp32",
   "omnisearch": "1.32.0 (e4a51ab), default settings, reproduced with minisearch 7.1.0",
   "datasets": {
@@ -23,6 +23,16 @@
           "recall10": 0.16611111111111113,
           "mrr10": 0.12800396825396826,
           "noResults": 0.6666666666666666
+        },
+        "omnisearch-live": {
+          "ndcg10": 0.1359276997304379,
+          "recall10": 0.16611111111111113,
+          "mrr10": 0.12800396825396826,
+          "noResults": 0.6666666666666666,
+          "ndcgVsOmnisearchCI95": [
+            0,
+            0
+          ]
         },
         "omnisearch-any-word": {
           "ndcg10": 0.5401116222537455,
@@ -87,6 +97,16 @@
           "mrr10": 0.33751289989680083,
           "noResults": 0.43034055727554177
         },
+        "omnisearch-live": {
+          "ndcg10": 0.2031844651205984,
+          "recall10": 0.09170551831296324,
+          "mrr10": 0.33751289989680083,
+          "noResults": 0.43034055727554177,
+          "ndcgVsOmnisearchCI95": [
+            0,
+            0
+          ]
+        },
         "omnisearch-any-word": {
           "ndcg10": 0.2814703285454655,
           "recall10": 0.13667904960344893,
@@ -130,5 +150,51 @@
       }
     }
   },
-  "live": {}
+  "live": {
+    "scifact": {
+      "checkedAt": "2026-11-20T03:44:02.409Z",
+      "queries": 300,
+      "identicalTop10": 300,
+      "sameTop10Set": 300,
+      "sameResultCount": 300,
+      "ndcg10": {
+        "reproduction": 0.1359276997304379,
+        "live": 0.1359276997304379
+      },
+      "mismatches": []
+    },
+    "nfcorpus": {
+      "checkedAt": "2026-11-20T03:44:39.101Z",
+      "queries": 323,
+      "identicalTop10": 322,
+      "sameTop10Set": 323,
+      "sameResultCount": 323,
+      "ndcg10": {
+        "reproduction": 0.2031844651205984,
+        "live": 0.2031844651205984
+      },
+      "mismatches": [
+        {
+          "query": "PLAIN-3452",
+          "text": "Bowel Movement Frequency",
+          "reproduction": {
+            "results": 7,
+            "top3": [
+              "MED-5175",
+              "MED-1031",
+              "MED-2100"
+            ]
+          },
+          "live": {
+            "results": 7,
+            "top3": [
+              "MED-5175",
+              "MED-1031",
+              "MED-4641"
+            ]
+          }
+        }
+      ]
+    }
+  }
 }

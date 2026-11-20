@@ -77,7 +77,7 @@ Vector retrieval currently uses an exact scan. Query time grows with the number 
 
 [Omnisearch](https://github.com/scambier/obsidian-omnisearch) is an excellent search-as-you-type tool for finding notes. It works on mobile, indexes PDFs and images, tolerates typos, and needs no model download. Heading Search was built to fill a different gap: asking a question in your own words and landing on the section that answers it.
 
-That difference shows on long natural-language queries. On two public benchmark collections of scientific abstracts, using Omnisearch's search reproduced from its source with default settings (nDCG@10):
+That difference shows on long natural-language queries. On two public benchmark collections of scientific abstracts, with Omnisearch 1.32.0 on its default settings (nDCG@10; reproduced from its source, and matching the running plugin's top 10 on 622 of 623 queries):
 
 | | SciFact (full-sentence claims) | NFCorpus (short topics) |
 | --- | ---: | ---: |

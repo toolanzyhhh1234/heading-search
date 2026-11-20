@@ -7,7 +7,8 @@ export const LIVE_PORTS={scifact:51361,nfcorpus:51362};
 export function noteNames(corpus) {
   const used=new Set();
   return corpus.map(d=>{
-    let name=d.title.replace(/[\\/:*?"<>|#^[\]]/g,' ').replace(/\s+/g,' ').trim();
+    // Obsidian reports paths in NFC; one NFCorpus title is stored decomposed.
+    let name=d.title.normalize('NFC').replace(/[\\/:*?"<>|#^[\]]/g,' ').replace(/\s+/g,' ').trim();
     if(name.length>MAX_NAME) { name=name.slice(0,MAX_NAME); const cut=name.lastIndexOf(' '); if(cut>MAX_NAME*0.6) name=name.slice(0,cut); }
     name=name.replace(/[. ]+$/,'')||String(d._id);
     let unique=name;
